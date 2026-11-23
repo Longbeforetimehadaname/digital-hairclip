@@ -4,7 +4,7 @@ Hinweise für Claude Code in diesem Repo. Der Benutzer spricht Deutsch und hat w
 
 ## Projekt
 
-Digitaler Haarclip als Weihnachtsgeschenk (24.12.2026). Board: LilyGO T-QT Pro (ESP32-S3, 0,85" 128×128). Die Webseite in `web/` steuert den Clip per Web Bluetooth und zeigt oben eine Vorschau. Gesamtplan: `PLAN.md`. **Schritt-für-Schritt-Anleitung mit Phasen: `docs/ANLEITUNG_CLAUDE_CODE.md`.** Protokoll: `docs/PROTOCOL.md`. Teile und Prüfpunkte: `hardware/PARTS.md`.
+Digitaler Haarclip als Weihnachtsgeschenk (24.12.2026). Hardware (grössere Bauweise, seit 23.11.2026, ersetzt das T-QT Pro): ESP32-DevKit (ESP32-WROOM-32), Display 1,9" 170×320 ST7789 (SPI), Lade-/Step-up-Modul TP4056, Akku 102542 1150 mAh mit JST-PH und Schutzschaltung. Details: `hardware/PARTS.md`. Die Webseite in `web/` steuert den Clip per Web Bluetooth und zeigt oben eine Vorschau. Gesamtplan: `PLAN.md`. **Schritt-für-Schritt-Anleitung mit Phasen: `docs/ANLEITUNG_CLAUDE_CODE.md`.** Protokoll: `docs/PROTOCOL.md`. Teile und Prüfpunkte: `hardware/PARTS.md`.
 
 ## Stand
 
@@ -12,11 +12,13 @@ Digitaler Haarclip als Weihnachtsgeschenk (24.12.2026). Board: LilyGO T-QT Pro (
 - Repo: `Longbeforetimehadaname/digital-hairclip` (öffentlich), Webseite per GitHub Pages: https://longbeforetimehadaname.github.io/digital-hairclip/ . Commits mit der noreply-Adresse dieses Kontos (lokal im Repo eingestellt).
 - Am 23.11.2026 in Chromium geprüft (375 px, hell/dunkel): Schrift scharf und mittig, Umlaute ok, Zeichnen mit Maus und Touch, Animationen, Foto. **Nicht** mit echter Hardware und **nicht** auf einem echten Handy getestet. Die Pixelschrift kommt von Google Fonts, ohne Internet fällt der Text auf eine Ersatzschrift zurück.
 - Offen: Firmware (`firmware/`), Gehäuse (`hardware/`), echte Verbindung Webseite ↔ Clip.
+- Offen: Darstellung auf dem neuen Hochformat-Display (170×320 statt 128×128). Webseite und `docs/PROTOCOL.md` gehen noch vom alten quadratischen Display aus. Mit dem Benutzer klären, wie es aussehen soll, dann Protokoll, Webseite, Tests und Firmware gemeinsam anpassen.
+- Teile bestellt am 23.11.2026, noch nicht geliefert (Lademodul laut AliExpress ca. 30.11.–5.12.).
 
 ## Nächste Schritte
 
 1. Seite lokal starten (`npm run serve`) und im Browser durchklicken: Text, Zeichnen, Animationen, Foto. Fehler beheben.
-2. Wenn die Teile da sind: Firmware nach `firmware/README.md` schreiben. Zuerst das Display-Beispiel aus dem LilyGO-Repo `Xinyuan-LilyGO/T-QT` zum Laufen bringen, dann BLE.
+2. Wenn die Teile da sind: Firmware nach `firmware/README.md` schreiben. Zuerst ein einfaches ST7789-Beispiel (z. B. Bibliothek TFT_eSPI oder Adafruit ST7789) mit der echten Pin-Beschriftung zum Laufen bringen, dann BLE.
 3. Verbindung testen: Android mit Chrome, iPhone mit der App Bluefy.
 4. Gehäuse in OpenSCAD (parametrisch) nach den echten Massen, dann drucken lassen.
 

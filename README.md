@@ -2,7 +2,7 @@
 
 Ein selbstgebauter Haarclip mit kleinem Display, den man per Handy mit Nachrichten, Zeichnungen, Animationen und Fotos füttert. Geschenkprojekt für Weihnachten 2026.
 
-- **Hardware:** LilyGO T-QT Pro (ESP32-S3, 0,85" Farbdisplay 128×128, Bluetooth LE, Akku-Ladeschaltung) + kleiner LiPo-Akku + 3D-gedrucktes Gehäuse
+- **Hardware:** ESP32-DevKit (Bluetooth LE) + Farbdisplay 1,9" 170×320 (ST7789) + Lademodul TP4056 + LiPo-Akku 1150 mAh + 3D-gedrucktes Gehäuse
 - **Look:** Das Display zeigt ein 16×8-Raster mit leuchtenden „LED-Punkten“. Fotos können den ganzen Bildschirm nutzen.
 - **Steuerung:** Webseite mit Web Bluetooth (Chrome auf Android, App „Bluefy“ auf dem iPhone). Keine App-Installation.
 

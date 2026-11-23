@@ -41,20 +41,21 @@ Frag den Benutzer zuerst, ob das Board und der Akku angekommen sind. **Ohne Hard
 
 ### 2a. Vor dem ersten Einschalten: Sicherheits-Check (mit dem Benutzer durchgehen)
 
-- Ist es die **Pro**-Version (Akku-Ladeschaltung)?
+- Ist es der richtige Akku (102542, 1150 mAh) und **nicht** der 250-mAh-Akku?
 - Hat der Akku einen **2-poligen JST-PH-2.0-Stecker** und eine Schutzschaltung?
-- **Polung mit Multimeter geprüft** und mit der +/−-Beschriftung am Board verglichen? Ohne Ja **kein Akku anschliessen**.
-- Erst nur per USB-C ans Board, **ohne Akku**.
+- **Polung mit Multimeter geprüft** und mit der Beschriftung **B+ / B−** am Lademodul verglichen? Ohne Ja **kein Akku anschliessen**.
+- Ausgangsspannung des Lademoduls **ohne Board** gemessen (ca. 5 V)?
+- Erst nur per USB ans ESP32-Board, **ohne Akku und ohne Lademodul**.
 
 ### 2b. Aufgaben
 
-1. Projekt aufsetzen (Arduino IDE oder PlatformIO, Board ESP32-S3). Pinbelegung und Display-Treiber **aus dem Repo `Xinyuan-LilyGO/T-QT` übernehmen**, nicht raten. Es gibt Varianten mit Treiber GC9107 oder GC9A01: nach dem echten Board richten.
+1. Projekt aufsetzen (Arduino IDE oder PlatformIO, Board „ESP32 Dev Module“). Display: ST7789, 170 × 320. Pin-Beschriftung von Board und Display **am echten Teil ablesen**, nicht raten. Verkabelung mit dem Benutzer Schritt für Schritt durchgehen.
 2. Display-Beispiel zum Laufen bringen. Dem Benutzer sagen, was er sehen sollte.
 3. BLE-Peripheral: Gerätename `Hairclip`, Nordic UART Service, Schreib-Characteristic (UUIDs in `docs/PROTOCOL.md`).
 4. Test ohne Webseite: mit der App nRF Connect das Paket `A5 04 01 00 64` (Helligkeit 100) senden. Das Display muss reagieren.
 5. Paket-Parser: Puffer, Neusynchronisierung auf `0xA5`, 2-Sekunden-Timeout, Längenlimit 10 000 Bytes.
-6. Darstellung: LED-Raster (Zellen à 8×8, Raster 128×64 zentriert), Animation, Text-Scrolling, Foto 64×64 verdoppelt, Helligkeit, Aus. Details am Ende von `docs/PROTOCOL.md`.
-7. Strom sparen: ohne Verbindung nach einigen Minuten Display dimmen oder ausschalten. Akkuspannung (laut Händler über IO4) auslesen und bei niedrigem Stand ein Zeichen zeigen. Ziel: ein ganzer Abend Laufzeit.
+6. Darstellung: Animation, Text-Scrolling, Foto, Helligkeit, Aus. **Achtung:** `docs/PROTOCOL.md` beschreibt noch das alte quadratische 128×128-Display. Für das Hochformat 170×320 zuerst mit dem Benutzer klären, wie es aussehen soll.
+7. Strom sparen: ohne Verbindung nach einigen Minuten die Hintergrundbeleuchtung dimmen oder ausschalten. Akkuspannung messen geht nur mit einem zusätzlichen Spannungsteiler (optional). Ziel: ein ganzer Abend Laufzeit.
 
 **Fertig, wenn:** alle fünf Befehle per nRF Connect funktionieren. Ablage in `firmware/`, Doku aktualisiert.
 
@@ -70,7 +71,7 @@ Frag den Benutzer zuerst, ob das Board und der Akku angekommen sind. **Ohne Hard
 
 ## Phase 4: Gehäuse (OpenSCAD)
 
-1. Den Benutzer bitten, **Board, Akku und Display mit der Schieblehre zu messen**. Herstellermasse (Board 33 × 17,8 × 8 mm, Akku ca. 30 × 20 × 6 mm) sind nur Startwerte.
+1. Den Benutzer bitten, **Board, Akku und Display mit der Schieblehre zu messen**. Bekannt ist nur der Akku (ca. 42 × 25 × 10 mm laut Händler). ESP32-Board, Display und Lademodul müssen gemessen werden.
 2. Parametrisches Modell in `hardware/case.scad`: Boden-/Deckelschale, Fenster fürs Display, Öffnung für USB-C, Fach für den Akku, Platz für Kabel, flache Rückseite zum Aufkleben auf die Spange. Spiel von etwa 0,3 mm einplanen.
 3. Rosa Optik wie im Video. Ein Schiebeschalter-Ausschnitt nur, wenn der Benutzer einen Schalter einbaut.
 4. STL exportieren und dem Benutzer Druckhinweise geben (PLA, Schichthöhe 0,2 mm, ohne Stützen wenn möglich). Erst einen Testdruck vorschlagen, bevor das schöne Teil gedruckt wird.
@@ -88,7 +89,7 @@ Frag den Benutzer zuerst, ob das Board und der Akku angekommen sind. **Ohne Hard
 ## Wenn etwas nicht klappt
 
 - **Board wird nicht erkannt:** anderes USB-C-Kabel (Datenkabel!), Boot-Modus (Taste halten beim Einstecken), anderer Port.
-- **Display bleibt schwarz:** Treiber-Variante (GC9107/GC9A01) und Pinbelegung prüfen.
+- **Display bleibt schwarz:** Verkabelung und Pins in der Firmware prüfen, Hintergrundbeleuchtung (BLK) an? Bei verschobenem Bild den Versatz (Offset) für 170×320 in der Bibliothek einstellen.
 - **Webseite findet den Clip nicht:** Clip an? Name beginnt mit `Hairclip`? Android: Standort/Bluetooth für Chrome erlaubt? Seite über `https://` oder `localhost` geöffnet?
 - **Senden bricht ab:** Stückgrösse verkleinern, kurze Pausen zwischen Schreibzugriffen erhöhen.
 - **Etwas riecht, wird heiss oder der Akku bläht sich auf:** sofort trennen, nicht weiter laden, dem Benutzer sagen, dass der Akku ersetzt werden muss.

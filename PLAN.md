@@ -10,7 +10,7 @@ Ein Haarclip mit kleinem Display, auf den man per Handy Nachrichten, Zeichnungen
 
 | Thema | Entscheidung | Warum |
 |---|---|---|
-| Hardware | **LilyGO T-QT Pro** (ESP32-S3, 0,85" Farbdisplay 128×128, BLE, Akku-Ladeschaltung) | Ein Teil ersetzt Chip, Display und Ladeschaltung. Kaum Löten, schlanker Clip (33 × 18 mm), ca. 12 € |
+| Hardware | **Grössere Bauweise** (Entscheid des Benutzers, 23.11.2026): ESP32-DevKit (ESP32-WROOM-32, BLE), Display 1,9" 170×320 ST7789, Lade-/Step-up-Modul TP4056, Akku 1150 mAh | Der Clip darf grösser sein. Mehr Löten und Verkabeln als mit dem zuerst geplanten LilyGO T-QT Pro, dafür grösseres Display und längere Laufzeit |
 | Look | 16×8-Raster aus „LED-Punkten“ in Software (Zellen à 8×8 Pixel) | Sieht aus wie das Video, ohne ein 8-cm-LED-Panel zu verbauen |
 | Fotos | Zusätzlich als echtes Foto (64×64, doppelt vergrössert) | Farbdisplay kann das, LED-Matrix nicht |
 | Steuerung | Webseite mit Web Bluetooth, keine App | Android: Chrome. iPhone zum Testen: App „Bluefy“. Läuft von GitHub Pages |
@@ -30,7 +30,7 @@ Verworfen: DIY-Matrix aus LED-Streifen (ca. 8 × 4 cm, viel Löten, zu gross). F
 ## Aufbau
 
 ```
-Handy (Chrome / Bluefy)  --BLE-->  Clip (ESP32-S3, T-QT Pro)
+Handy (Chrome / Bluefy)  --BLE-->  Clip (ESP32-DevKit + Display 1,9")
    web/ (Steuerseite)              firmware/ (noch zu schreiben)
    Protokoll: docs/PROTOCOL.md
 ```
@@ -49,7 +49,7 @@ Wunsch: Teile spätestens am 5.12. da. Hartes Limit: ca. 15.12. Danach wird es e
 
 ## Einkaufsliste
 
-Siehe [hardware/PARTS.md](hardware/PARTS.md). Kurz: T-QT Pro (Version „Pro“), LiPo 3,7 V 200–300 mAh mit 2-poligem JST-PH-2.0-Stecker und Schutzschaltung, Haarspange, USB-C-Datenkabel; bei Bedarf Lötzeug, Multimeter, Klebeband/Epoxid, Ersatzboard.
+Siehe [hardware/PARTS.md](hardware/PARTS.md). Bestellt: ESP32-DevKit, Display 1,9" ST7789, Lademodul TP4056 mit Step-up, Akku 102542 (1150 mAh, JST-PH, Schutzschaltung). Noch nötig: Multimeter, Haarspange, USB-Datenkabel, Klebeband/Epoxid.
 
 ## Risiken
 
@@ -65,7 +65,7 @@ Siehe [hardware/PARTS.md](hardware/PARTS.md). Kurz: T-QT Pro (Version „Pro“)
 ## Testen ohne Geld zu verlieren
 
 - Die Webseite hat eine eingebaute Vorschau, sie geht komplett ohne Hardware.
-- Simulatoren wie Wokwi (kostenlos für private Nutzung) prüfen höchstens Code, nicht Bluetooth, Akku oder Polung. Das T-QT Pro ist dort kein fertiges Board.
+- Simulatoren wie Wokwi (kostenlos für private Nutzung) prüfen höchstens Code, nicht Bluetooth, Akku oder Polung. Ein normales ESP32-DevKit gibt es dort, das Display teilweise auch.
 - Echte Fehler passieren elektrisch (Polung, Kurzschluss, Löten). Dagegen helfen Multimeter, Löten üben und ein Ersatzboard.
 
 ## Offene Punkte
@@ -74,7 +74,8 @@ Siehe [hardware/PARTS.md](hardware/PARTS.md). Kurz: T-QT Pro (Version „Pro“)
 - [ ] Wer druckt das Gehäuse und mit welchem Material?
 - [ ] Repo-Name, privat oder öffentlich?
 - [ ] Soll der Clip nach einiger Zeit von selbst ausgehen?
-- [ ] Teile gefunden? (läuft über einen separaten Agenten, Ergebnis hier eintragen)
+- [x] Teile bestellt (23.11.2026), siehe `hardware/PARTS.md`
+- [ ] Darstellung auf dem Hochformat-Display 170×320: LED-Raster behalten oder anders? Danach Protokoll und Webseite anpassen.
 
 ## Nächste Schritte
 
