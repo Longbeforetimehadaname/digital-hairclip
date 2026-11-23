@@ -71,7 +71,7 @@ h1 {
 }
 
 .bezel {
-  width: min(58vw, 15rem);
+  width: min(46vw, 15rem); /* auf dem Handy kleiner, damit der Clip eine Pille bleibt und kein Ei */
   aspect-ratio: 1;
   padding: 0.6rem;
   border-radius: 1.6rem;

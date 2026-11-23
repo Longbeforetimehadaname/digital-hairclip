@@ -4,6 +4,7 @@ import {
 } from './protocol.js';
 import { PRESETS } from './presets.js';
 import { HairclipLink } from './ble.js';
+import { columnsFromImage, cellsOnLine, enhanceFrame } from './pixels.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -123,53 +124,26 @@ function loop(ms) {
 
 /* ---------- Text ---------- */
 
-// Rendert Text mit einer Pixelschrift in ein 8 Zeilen hohes Spalten-Raster (ein Byte pro Spalte, Bit 0 = oben).
+// Rendert Text mit der Pixelschrift „Silkscreen“ in ein 8 Zeilen hohes Spalten-Raster
+// (ein Byte pro Spalte, Bit 0 = oben). Silkscreen hat ein Raster von Schriftgrösse/8.
+// Direkt bei 8 px gezeichnet verschmieren die Buchstaben (doppelte Querstriche bei H, A, E).
+// Darum wird gross gezeichnet (1 Schriftpixel = FONT_CELL Bildpixel) und pro Zelle die Mitte abgetastet.
+const FONT_CELL = 4;
 async function buildColumns(text) {
   const t = text.trim() ? text : ' ';
-  const probe = document.createElement('canvas').getContext('2d');
   const work = document.createElement('canvas');
   const c = work.getContext('2d', { willReadFrequently: true });
-  for (let size = 8; size >= 5; size--) {
-    const font = `${size}px "Silkscreen", monospace`;
-    probe.font = font;
-    const w = Math.ceil(probe.measureText(t).width) + 4;
-    work.width = w;
-    work.height = 24;
-    c.font = font;
-    c.textBaseline = 'alphabetic';
-    c.fillStyle = '#fff';
-    c.fillText(t, 2, 16);
-    const d = c.getImageData(0, 0, w, 24).data;
-    let top = 24;
-    let bottom = -1;
-    for (let y = 0; y < 24; y++) {
-      for (let x = 0; x < w; x++) {
-        if (d[(y * w + x) * 4 + 3] > 110) {
-          if (y < top) top = y;
-          if (y > bottom) bottom = y;
-        }
-      }
-    }
-    if (bottom < 0) return new Uint8Array(0);
-    const h = bottom - top + 1;
-    if (h > H && size > 5) continue; // zu hoch: kleinere Schrift probieren
-    const pad = Math.max(0, Math.floor((H - h) / 2));
-    const out = new Uint8Array(w);
-    for (let x = 0; x < w; x++) {
-      let b = 0;
-      for (let r = 0; r < H; r++) {
-        const sy = top + r - pad;
-        if (sy >= top && sy <= bottom && d[(sy * w + x) * 4 + 3] > 110) b |= 1 << r;
-      }
-      out[x] = b;
-    }
-    let a = 0;
-    let z = out.length;
-    while (a < z && out[a] === 0) a++;
-    while (z > a && out[z - 1] === 0) z--;
-    return out.slice(a, z);
-  }
-  return new Uint8Array(0);
+  const font = `${FONT_CELL * 8}px "Silkscreen", monospace`;
+  c.font = font;
+  const w = (Math.ceil(c.measureText(t).width / FONT_CELL) + 4) * FONT_CELL;
+  const h = 16 * FONT_CELL;
+  work.width = w; // setzt den Zeichenzustand zurück, darum danach Schrift neu setzen
+  work.height = h;
+  c.font = font;
+  c.textBaseline = 'alphabetic';
+  c.fillStyle = '#fff';
+  c.fillText(t, 2 * FONT_CELL, 11 * FONT_CELL); // Grundlinie auf einer Zellgrenze: Platz für Umlaut-Punkte und Unterlängen
+  return columnsFromImage(c.getImageData(0, 0, w, h).data, w, h, FONT_CELL);
 }
 
 let textToken = 0;
@@ -243,28 +217,34 @@ function syncDraw() {
   $('#tool-eraser').setAttribute('aria-pressed', String(d.tool === 'eraser'));
 }
 
+let painting = false;
+let lastCell = null; // letzte gemalte Zelle, damit schnelle Striche durchgehend werden
+
 function paintAt(e) {
   const r = editor.getBoundingClientRect();
-  const x = Math.floor(((e.clientX - r.left) / r.width) * W);
-  const y = Math.floor(((e.clientY - r.top) / r.height) * H);
-  if (x < 0 || x >= W || y < 0 || y >= H) return;
+  const x = Math.min(W - 1, Math.max(0, Math.floor(((e.clientX - r.left) / r.width) * W)));
+  const y = Math.min(H - 1, Math.max(0, Math.floor(((e.clientY - r.top) / r.height) * H)));
   const f = state.draw.frames[state.draw.cur];
   const [cr, cg, cb] = state.draw.tool === 'pen' ? hexToRgb(state.draw.color) : [0, 0, 0];
-  const i = (y * W + x) * 3;
-  f[i] = cr; f[i + 1] = cg; f[i + 2] = cb;
+  const cells = lastCell ? cellsOnLine(lastCell[0], lastCell[1], x, y) : [[x, y]];
+  for (const [cx, cy] of cells) {
+    const i = (cy * W + cx) * 3;
+    f[i] = cr; f[i + 1] = cg; f[i + 2] = cb;
+  }
+  lastCell = [x, y];
   renderEditor();
 }
 
-let painting = false;
 editor.addEventListener('pointerdown', (e) => {
   editor.setPointerCapture(e.pointerId);
   painting = true;
+  lastCell = null;
   state.draw.playing = false;
   paintAt(e);
 });
 editor.addEventListener('pointermove', (e) => { if (painting) paintAt(e); });
 ['pointerup', 'pointercancel'].forEach((name) =>
-  editor.addEventListener(name, () => { painting = false; syncDraw(); }));
+  editor.addEventListener(name, () => { painting = false; lastCell = null; syncDraw(); }));
 
 SWATCHES.forEach(([hex, name]) => {
   const b = document.createElement('button');
@@ -359,7 +339,7 @@ $('#photo-file').addEventListener('change', async (e) => {
       frame[i * 3 + 2] = data[i * 4 + 2];
     }
     state.photo.full = full;
-    state.photo.ledFrame = frame;
+    state.photo.ledFrame = enhanceFrame(frame);
     setMsg('Foto geladen.');
   } catch {
     setMsg('Dieses Bild konnte nicht gelesen werden. Probier ein JPG oder PNG.', true);
@@ -466,6 +446,7 @@ bright.addEventListener('change', async () => {
 
 const tabs = $$('[role="tab"]');
 function selectTab(name, focus = false) {
+  if (state.tab !== name) setMsg(''); // alte Meldung (z. B. „Foto geladen.“) gehört nicht zum neuen Tab
   state.tab = name;
   tabs.forEach((t) => {
     const on = t.id === `tab-${name}`;
@@ -478,10 +459,15 @@ function selectTab(name, focus = false) {
 tabs.forEach((t, i) => {
   t.addEventListener('click', () => selectTab(t.id.replace('tab-', '')));
   t.addEventListener('keydown', (e) => {
-    const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
-    if (!step) return;
+    const target = {
+      ArrowRight: (i + 1) % tabs.length,
+      ArrowLeft: (i - 1 + tabs.length) % tabs.length,
+      Home: 0,
+      End: tabs.length - 1,
+    }[e.key];
+    if (target === undefined) return;
     e.preventDefault();
-    selectTab(tabs[(i + step + tabs.length) % tabs.length].id.replace('tab-', ''), true);
+    selectTab(tabs[target].id.replace('tab-', ''), true);
   });
 });
 
