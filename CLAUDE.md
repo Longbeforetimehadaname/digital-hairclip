@@ -8,8 +8,9 @@ Digitaler Haarclip als Weihnachtsgeschenk (24.12.2026). Board: LilyGO T-QT Pro (
 
 ## Stand
 
-- Fertig und getestet (`npm test`, 21 Tests): Protokoll (`web/protocol.js`), Animationen (`web/presets.js`), Oberfläche (`web/app.js`, `web/index.html`, `web/style.css`), Bluetooth-Hülle (`web/ble.js`).
-- **Nicht** in einem echten Browser angesehen und **nicht** mit echter Hardware getestet. Das Aussehen und die Pixelschrift („Silkscreen“, Text → 8 Zeilen, siehe `buildColumns` in `web/app.js`) müssen im Browser geprüft werden. Falls der Text schlecht aussieht oder nicht mittig sitzt, dort ansetzen.
+- Fertig und getestet (`npm test`, 27 Tests): Protokoll (`web/protocol.js`), Animationen (`web/presets.js`), Pixel-Hilfen (`web/pixels.js`: Schrift abtasten, Linien, Foto-Kontrast), Oberfläche (`web/app.js`, `web/index.html`, `web/style.css`), Bluetooth-Hülle (`web/ble.js`).
+- Repo: `Longbeforetimehadaname/digital-hairclip` (öffentlich), Webseite per GitHub Pages: https://longbeforetimehadaname.github.io/digital-hairclip/ . Commits mit der noreply-Adresse dieses Kontos (lokal im Repo eingestellt).
+- Am 23.11.2026 in Chromium geprüft (375 px, hell/dunkel): Schrift scharf und mittig, Umlaute ok, Zeichnen mit Maus und Touch, Animationen, Foto. **Nicht** mit echter Hardware und **nicht** auf einem echten Handy getestet. Die Pixelschrift kommt von Google Fonts, ohne Internet fällt der Text auf eine Ersatzschrift zurück.
 - Offen: Firmware (`firmware/`), Gehäuse (`hardware/`), echte Verbindung Webseite ↔ Clip.
 
 ## Nächste Schritte
