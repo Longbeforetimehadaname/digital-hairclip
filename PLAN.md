@@ -11,8 +11,8 @@ Ein Haarclip mit kleinem Display, auf den man per Handy Nachrichten, Zeichnungen
 | Thema | Entscheidung | Warum |
 |---|---|---|
 | Hardware | **Grössere Bauweise** (Entscheid des Benutzers, 23.11.2026): ESP32-DevKit (ESP32-WROOM-32, BLE), Display 1,9" 170×320 ST7789, Lade-/Step-up-Modul TP4056, Akku 1150 mAh | Der Clip darf grösser sein. Mehr Löten und Verkabeln als mit dem zuerst geplanten LilyGO T-QT Pro, dafür grösseres Display und längere Laufzeit |
-| Look | 16×8-Raster aus „LED-Punkten“ in Software (Zellen à 8×8 Pixel) | Sieht aus wie das Video, ohne ein 8-cm-LED-Panel zu verbauen |
-| Fotos | Zusätzlich als echtes Foto (64×64, doppelt vergrössert) | Farbdisplay kann das, LED-Matrix nicht |
+| Look | **Echte Pixel**, Display im Querformat 320 × 170 (Entscheid des Benutzers, 23.11.2026) | Scharfer Text, feine Zeichnungen und Fotos statt LED-Punkte |
+| Fotos | Foto über das ganze Display, 320 × 170 | Farbdisplay kann das |
 | Steuerung | Webseite mit Web Bluetooth, keine App | Android: Chrome. iPhone zum Testen: App „Bluefy“. Läuft von GitHub Pages |
 | Gehäuse | 3D-Druck bei Bekannten mit Drucker, rosa | Masse erst nach Eintreffen der Teile |
 | Sprache der Oberfläche | Deutsch | |
@@ -22,9 +22,9 @@ Verworfen: DIY-Matrix aus LED-Streifen (ca. 8 × 4 cm, viel Löten, zu gross). F
 ## Funktionen
 
 1. Scrolling-Text mit Farbe und Tempo
-2. Selbst zeichnen im 16×8-Raster, mit mehreren Bildern als Animation
+2. Selbst zeichnen mit Pinsel (Grösse einstellbar), bis 8 Bilder als Animation
 3. Fertige Animationen: Herz, Funkeln, Regenbogen, Regen
-4. Foto anzeigen (als LED-Bild 16×8 oder als Foto auf dem ganzen Bildschirm)
+4. Foto auf dem ganzen Bildschirm
 5. Helligkeit und Display aus
 
 ## Aufbau
@@ -75,7 +75,7 @@ Siehe [hardware/PARTS.md](hardware/PARTS.md). Bestellt: ESP32-DevKit, Display 1,
 - [ ] Repo-Name, privat oder öffentlich?
 - [ ] Soll der Clip nach einiger Zeit von selbst ausgehen?
 - [x] Teile bestellt (23.11.2026), siehe `hardware/PARTS.md`
-- [ ] Darstellung auf dem Hochformat-Display 170×320: LED-Raster behalten oder anders? Danach Protokoll und Webseite anpassen.
+- [x] Darstellung: echte Pixel im Querformat 320 × 170 (Protokoll Version 2)
 
 ## Nächste Schritte
 

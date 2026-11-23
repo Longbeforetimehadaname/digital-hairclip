@@ -20,7 +20,7 @@
   <section class="stage" aria-label="Vorschau">
     <div class="clip">
       <div class="bezel">
-        <canvas id="screen" width="512" height="512" role="img" aria-label="Vorschau des Clip-Displays"></canvas>
+        <canvas id="screen" width="320" height="170" role="img" aria-label="Vorschau des Clip-Displays"></canvas>
       </div>
     </div>
 
@@ -63,13 +63,17 @@
   </section>
 
   <section id="panel-draw" class="panel" role="tabpanel" aria-labelledby="tab-draw" hidden>
-    <canvas id="editor" width="448" height="224" aria-label="Zeichenfläche, 16 mal 8 Punkte"></canvas>
+    <canvas id="editor" width="320" height="170" aria-label="Zeichenfläche, so gross wie das Display"></canvas>
     <div class="row swatches" id="swatches" role="group" aria-label="Farben"></div>
     <div class="row">
       <label for="draw-color">Eigene Farbe</label>
       <input id="draw-color" type="color" value="#ff4d9d">
       <button id="tool-pen" class="btn small" type="button" aria-pressed="true">Stift</button>
       <button id="tool-eraser" class="btn small" type="button" aria-pressed="false">Radierer</button>
+    </div>
+    <div class="row">
+      <label for="brush">Pinselgrösse</label>
+      <input id="brush" type="range" min="1" max="12" value="4">
     </div>
     <div id="frames" class="frames" role="group" aria-label="Bilder der Animation"></div>
     <div class="row">
@@ -93,11 +97,7 @@
   <section id="panel-photo" class="panel" role="tabpanel" aria-labelledby="tab-photo" hidden>
     <label for="photo-file">Foto auswählen</label>
     <input id="photo-file" type="file" accept="image/*">
-    <fieldset>
-      <legend>Darstellung</legend>
-      <label class="choice"><input type="radio" name="photo-mode" value="led" checked> Als LED-Bild (16 × 8)</label>
-      <label class="choice"><input type="radio" name="photo-mode" value="full"> Als Foto (ganzer Bildschirm)</label>
-    </fieldset>
+    <p class="note">Das Foto füllt das ganze Display, überstehende Ränder werden abgeschnitten. Senden dauert ein paar Sekunden.</p>
     <button class="btn primary" type="button" data-send="photo">An den Clip senden</button>
   </section>
 

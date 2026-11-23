@@ -1,15 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PRESETS, hsv } from '../web/presets.js';
-import { FRAME_BYTES, MAX_ANIM_FRAMES, animPacket } from '../web/protocol.js';
+import { FRAME_BYTES, MAX_ANIM_FRAMES, animPackets } from '../web/protocol.js';
 
 for (const preset of PRESETS) {
   test(`Preset "${preset.name}": gültige, sichtbare, sendbare Bilder`, () => {
     const frames = preset.make();
     assert.ok(frames.length >= 1 && frames.length <= MAX_ANIM_FRAMES);
     for (const f of frames) assert.equal(f.length, FRAME_BYTES);
-    assert.ok(frames.some((f) => f.some((v) => v > 0)), 'mindestens ein Pixel leuchtet');
-    assert.doesNotThrow(() => animPacket(frames, preset.fps));
+    const lit = (f) => { for (let i = 0; i < f.length; i += 4) if (f[i] + f[i + 1] + f[i + 2] > 0) return true; return false; };
+    assert.ok(frames.some(lit), 'mindestens ein Pixel leuchtet');
+    assert.doesNotThrow(() => animPackets(frames, preset.fps), 'passt in den Speicher des Clips');
   });
 }
 

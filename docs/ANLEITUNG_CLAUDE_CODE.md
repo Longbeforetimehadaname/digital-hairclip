@@ -29,7 +29,7 @@ Die Seite wurde bisher nur mit jsdom getestet, **nie in einem echten Browser ang
    - **Text:** Die Pixelschrift „Silkscreen“ lädt, Text ist **senkrecht mittig** in den 8 Zeilen, Buchstaben sind lesbar, Umlaute funktionieren. Wenn die Schrift nicht lädt oder schief sitzt, `buildColumns` in `web/app.js` verbessern (im Zweifel eine kleine feste 5×7-Schrift einbauen).
    - **Zeichnen:** Malen mit Maus und mit Finger (Touch), Radierer, Farben, Bilder kopieren/löschen, Abspielen.
    - **Animation:** alle vier Presets laufen schön und ohne Flackern.
-   - **Foto:** beide Darstellungen. Kontrast beim 16×8-Bild ist oft zu schwach, dann Kontrast oder Sättigung erhöhen.
+   - **Foto:** füllt das ganze Display (320 × 170), Ränder werden abgeschnitten.
    - Hell- und Dunkelmodus, Tastatur-Bedienung der Tabs, Lesbarkeit der Texte.
 4. Gefundene Fehler beheben, dazu wo sinnvoll einen Test ergänzen.
 
@@ -53,8 +53,8 @@ Frag den Benutzer zuerst, ob das Board und der Akku angekommen sind. **Ohne Hard
 2. Display-Beispiel zum Laufen bringen. Dem Benutzer sagen, was er sehen sollte.
 3. BLE-Peripheral: Gerätename `Hairclip`, Nordic UART Service, Schreib-Characteristic (UUIDs in `docs/PROTOCOL.md`).
 4. Test ohne Webseite: mit der App nRF Connect das Paket `A5 04 01 00 64` (Helligkeit 100) senden. Das Display muss reagieren.
-5. Paket-Parser: Puffer, Neusynchronisierung auf `0xA5`, 2-Sekunden-Timeout, Längenlimit 10 000 Bytes.
-6. Darstellung: Animation, Text-Scrolling, Foto, Helligkeit, Aus. **Achtung:** `docs/PROTOCOL.md` beschreibt noch das alte quadratische 128×128-Display. Für das Hochformat 170×320 zuerst mit dem Benutzer klären, wie es aussehen soll.
+5. Paket-Parser: Puffer, Neusynchronisierung auf `0xA5`, 2-Sekunden-Timeout, Längenlimit 40 000 Bytes.
+6. Darstellung mit echten Pixeln im Querformat 320 × 170 (Protokoll Version 2): Animationen als Lauflängen-Bilder, Text-Scrolling, Foto, Helligkeit, Aus. Details in `docs/PROTOCOL.md`.
 7. Strom sparen: ohne Verbindung nach einigen Minuten die Hintergrundbeleuchtung dimmen oder ausschalten. Akkuspannung messen geht nur mit einem zusätzlichen Spannungsteiler (optional). Ziel: ein ganzer Abend Laufzeit.
 
 **Fertig, wenn:** alle fünf Befehle per nRF Connect funktionieren. Ablage in `firmware/`, Doku aktualisiert.
@@ -63,7 +63,7 @@ Frag den Benutzer zuerst, ob das Board und der Akku angekommen sind. **Ohne Hard
 
 1. Seite über `https://` (GitHub Pages) oder `localhost` auf einem **Android-Handy mit Chrome** öffnen und mit dem Clip verbinden.
 2. Alle vier Bereiche echt senden und das Ergebnis mit der Vorschau vergleichen.
-3. Geschwindigkeit messen: Das Foto sind ca. 8 KB, in 20-Byte-Stücken sind das rund 400 Schreibzugriffe. Wenn es länger als einige Sekunden dauert, Stückgrösse erhöhen (MTU), `chunks(...)` in `web/protocol.js` und `web/ble.js` anpassen und `docs/PROTOCOL.md` aktualisieren.
+3. Geschwindigkeit messen: Das Foto sind ca. 109 KB, in 180-Byte-Stücken rund 600 Schreibzugriffe mit Antwort. Text und Animationen sind meist 2–25 KB. Wenn es zu langsam ist oder abbricht, `CHUNK` in `web/protocol.js` anpassen und `docs/PROTOCOL.md` aktualisieren.
 4. iPhone-Test mit der App **Bluefy** (Safari kann kein Web Bluetooth).
 5. Verbindungsabbruch, Neuverbinden und zu schnelles Senden provozieren. Es darf nichts hängen bleiben.
 

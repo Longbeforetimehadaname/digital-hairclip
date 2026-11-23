@@ -8,11 +8,11 @@ Digitaler Haarclip als Weihnachtsgeschenk (24.12.2026). Hardware (grössere Bauw
 
 ## Stand
 
-- Fertig und getestet (`npm test`, 27 Tests): Protokoll (`web/protocol.js`), Animationen (`web/presets.js`), Pixel-Hilfen (`web/pixels.js`: Schrift abtasten, Linien, Foto-Kontrast), Oberfläche (`web/app.js`, `web/index.html`, `web/style.css`), Bluetooth-Hülle (`web/ble.js`).
+- Fertig und getestet (`npm test`, 29 Tests): Protokoll (`web/protocol.js`), Animationen (`web/presets.js`), Pixel-Hilfen (`web/pixels.js`: Textstreifen, Linien, Pinsel), Oberfläche (`web/app.js`, `web/index.html`, `web/style.css`), Bluetooth-Hülle (`web/ble.js`).
 - Repo: `Longbeforetimehadaname/digital-hairclip` (öffentlich), Webseite per GitHub Pages: https://longbeforetimehadaname.github.io/digital-hairclip/ . Commits mit der noreply-Adresse dieses Kontos (lokal im Repo eingestellt).
 - Am 23.11.2026 in Chromium geprüft (375 px, hell/dunkel): Schrift scharf und mittig, Umlaute ok, Zeichnen mit Maus und Touch, Animationen, Foto. **Nicht** mit echter Hardware und **nicht** auf einem echten Handy getestet. Die Pixelschrift kommt von Google Fonts, ohne Internet fällt der Text auf eine Ersatzschrift zurück.
 - Offen: Firmware (`firmware/`), Gehäuse (`hardware/`), echte Verbindung Webseite ↔ Clip.
-- Offen: Darstellung auf dem neuen Hochformat-Display (170×320 statt 128×128). Webseite und `docs/PROTOCOL.md` gehen noch vom alten quadratischen Display aus. Mit dem Benutzer klären, wie es aussehen soll, dann Protokoll, Webseite, Tests und Firmware gemeinsam anpassen.
+- Darstellung (Entscheid des Benutzers): **echte Pixel**, Display im Querformat 320 × 170. Protokoll Version 2 (`docs/PROTOCOL.md`): Animationen als Lauflängen-Bilder (RGB565), Text als 1-Bit-Streifen (Höhe 112, Schrift Nunito fett), Foto in Zeilenblöcken. Webseite und Tests sind umgestellt und am 23.11.2026 in Chromium (375 px) geprüft. Die Übertragungsgeschwindigkeit (180-Byte-Stücke mit Antwort) ist noch nicht mit echter Hardware gemessen.
 - Teile bestellt am 23.11.2026, noch nicht geliefert (Lademodul laut AliExpress ca. 30.11.–5.12.).
 
 ## Nächste Schritte

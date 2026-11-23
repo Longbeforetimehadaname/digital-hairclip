@@ -12,9 +12,13 @@ Ziel: Firmware für ein **ESP32-DevKit mit 1,9"-Display (ST7789)**, die das Prot
 ## Aufgaben
 
 1. Arduino-/PlatformIO-Projekt aufsetzen und ein einfaches ST7789-Beispiel (Farbe füllen, Text) mit 170 × 320 zum Laufen bringen. Das Board dabei nur per USB versorgen, ohne Akku.
-2. BLE-Peripheral mit Nordic UART Service, Gerätename `Hairclip` (z. B. mit NimBLE-Arduino).
-3. Paket-Parser mit Puffer, Neusynchronisierung auf `0xA5`, 2-Sekunden-Timeout und Längenlimit 10 000 Bytes.
-4. Darstellung: **noch offen**, weil das Display jetzt Hochformat ist. Das Protokoll geht noch vom alten 128×128-Display aus (LED-Raster 16 × 8, Foto 64 × 64). Vor dem Umsetzen mit dem Benutzer klären und Protokoll, Webseite und Tests gleichzeitig anpassen.
+2. BLE-Peripheral mit Nordic UART Service, Gerätename `Hairclip` (z. B. mit NimBLE-Arduino). Die Schreib-Characteristic muss Schreibzugriffe bis 180 Bytes annehmen (Write mit Antwort, auch als Long Write).
+3. Paket-Parser mit Puffer, Neusynchronisierung auf `0xA5`, 2-Sekunden-Timeout und Längenlimit 40 000 Bytes.
+4. Darstellung mit echten Pixeln, Display um 90° gedreht auf **320 × 170 Querformat** (Protokoll Version 2):
+   - FRAME: Lauflängen-Bilder speichern (zusammen höchstens 64 KB) und in Schleife abspielen, jede Gruppe mit `pushBlock` schreiben.
+   - TEXT: 1-Bit-Streifen (Höhe 112) senkrecht mittig von rechts nach links scrollen, z. B. über ein Sprite.
+   - PHOTO: Zeilenblöcke direkt aufs Display schreiben.
+   - Details und genaue Formeln in `docs/PROTOCOL.md`. Bei manchen 170×320-Displays ist das Bild verschoben: dann den Versatz (Offset) in der Bibliothek einstellen.
 5. Stromsparen: Hintergrundbeleuchtung (BLK) dimmen oder ausschalten nach einiger Zeit ohne Verbindung. Ziel: ein Abend Laufzeit.
 6. Akkustand über die TX-Characteristic melden (optional, braucht den Spannungsteiler).
 

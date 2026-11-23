@@ -3,7 +3,7 @@
 Ein selbstgebauter Haarclip mit kleinem Display, den man per Handy mit Nachrichten, Zeichnungen, Animationen und Fotos füttert. Geschenkprojekt für Weihnachten 2026.
 
 - **Hardware:** ESP32-DevKit (Bluetooth LE) + Farbdisplay 1,9" 170×320 (ST7789) + Lademodul TP4056 + LiPo-Akku 1150 mAh + 3D-gedrucktes Gehäuse
-- **Look:** Das Display zeigt ein 16×8-Raster mit leuchtenden „LED-Punkten“. Fotos können den ganzen Bildschirm nutzen.
+- **Look:** Echte Pixel im Querformat 320 × 170: scharfer Text, Zeichnungen, Animationen und Fotos über das ganze Display.
 - **Steuerung:** Webseite mit Web Bluetooth (Chrome auf Android, App „Bluefy“ auf dem iPhone). Keine App-Installation.
 
 Stand: Webseite mit Vorschau ist fertig. Firmware und Gehäuse folgen, sobald die Teile da sind. Den ganzen Plan findest du in [PLAN.md](PLAN.md).
@@ -32,7 +32,7 @@ Prüft das Bluetooth-Protokoll, die Animationen und die Verdrahtung der Oberflä
 | `web/` | Steuerungsseite (HTML, CSS, JavaScript ohne Build-Schritt) |
 | `docs/PROTOCOL.md` | Bluetooth-Protokoll zwischen Webseite und Clip |
 | `docs/ANLEITUNG_CLAUDE_CODE.md` | Phasenplan und Arbeitsregeln für Claude Code |
-| `firmware/` | Firmware für den ESP32-S3 (noch zu schreiben) |
+| `firmware/` | Firmware für den ESP32 (noch zu schreiben) |
 | `hardware/` | Teileliste, Prüfpunkte, später Gehäuse (OpenSCAD) |
 | `test/` | Automatische Tests |
 

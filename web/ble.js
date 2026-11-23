@@ -1,8 +1,6 @@
 // Dünne Hülle um Web Bluetooth. Funktioniert in Chrome (Android, Desktop) und in der iOS-App „Bluefy“.
 import { SERVICE_UUID, RX_UUID, DEVICE_NAME_PREFIX, chunks } from './protocol.js';
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
 export class HairclipLink {
   constructor({ onChange } = {}) {
     this.onChange = onChange || (() => {});
@@ -45,20 +43,20 @@ export class HairclipLink {
     this.onChange();
   }
 
+  // Schreibt mit Antwort: Der Clip bestätigt jedes Stück, dadurch kann er nicht überrannt werden.
+  // Stücke bis 180 Bytes gehen auch bei kleiner Verbindungsgrösse (MTU) als „Long Write“ durch.
+  // Noch nicht mit echter Hardware gemessen: Wenn es zu langsam ist oder abbricht, CHUNK in protocol.js anpassen.
   async send(bytes, onProgress = () => {}) {
     if (!this.connected) throw new Error('NOT_CONNECTED');
     if (this.busy) throw new Error('BUSY');
     this.busy = true;
     try {
       let sent = 0;
-      let writes = 0;
-      for (const part of chunks(bytes, 20)) {
-        if (this.rx.writeValueWithoutResponse) await this.rx.writeValueWithoutResponse(part);
+      for (const part of chunks(bytes)) {
+        if (this.rx.writeValueWithResponse) await this.rx.writeValueWithResponse(part);
         else await this.rx.writeValue(part);
         sent += part.length;
-        writes += 1;
         onProgress(sent / bytes.length);
-        if (writes % 8 === 0) await sleep(6); // dem kleinen Chip Zeit zum Verarbeiten lassen
       }
     } finally {
       this.busy = false;

@@ -1,47 +1,30 @@
 // Reine Pixel-Hilfsfunktionen ohne Browser, damit sie testbar sind.
-import { W, H } from './protocol.js';
 
-// Wandelt ein gross gezeichnetes Textbild (RGBA) in Spalten für das 8 Zeilen hohe Raster um.
-// `cell` ist die Grösse eines Schriftpixels in Bildpixeln. Abgetastet wird die Mitte jeder Zelle,
-// so bleiben die Buchstaben scharf, auch wenn die Ränder der Schrift weichgezeichnet sind.
-// Ergebnis: ein Byte pro Spalte, Bit 0 = oberste Zeile, senkrecht mittig, leere Ränder abgeschnitten.
-export function columnsFromImage(rgba, w, h, cell) {
-  const cols = Math.floor(w / cell);
-  const rows = Math.floor(h / cell);
-  const on = (cx, cy) => rgba[((cy * cell + (cell >> 1)) * w + cx * cell + (cell >> 1)) * 4 + 3] > 127;
-
-  let top = rows;
-  let bottom = -1;
-  for (let cy = 0; cy < rows; cy++) {
-    for (let cx = 0; cx < cols; cx++) {
-      if (on(cx, cy)) {
-        if (cy < top) top = cy;
-        bottom = cy;
-        break;
-      }
-    }
-  }
-  if (bottom < 0) return new Uint8Array(0);
-
-  const inkRows = bottom - top + 1;
-  const pad = Math.max(0, Math.floor((H - inkRows) / 2));
-  const out = new Uint8Array(cols);
-  for (let cx = 0; cx < cols; cx++) {
-    let b = 0;
-    for (let r = 0; r < H; r++) {
-      const cy = top + r - pad;
-      if (cy >= top && cy <= bottom && on(cx, cy)) b |= 1 << r;
-    }
-    out[cx] = b;
-  }
+// Wandelt ein Textbild (RGBA, w × h) in einen Textstreifen für das TEXT-Paket um:
+// Spalte für Spalte, je ceil(h/8) Bytes, Bit 0 = oberste Zeile. Ein Pixel gilt als gesetzt,
+// wenn er mehr als halb deckend ist. Leere Spalten links und rechts werden abgeschnitten.
+// Ergebnis: { bits, w } (w = neue Breite, 0 wenn nichts zu sehen ist).
+export function textStrip(rgba, w, h) {
+  const per = Math.ceil(h / 8);
+  const on = (x, y) => rgba[(y * w + x) * 4 + 3] > 127;
+  const colEmpty = (x) => { for (let y = 0; y < h; y++) if (on(x, y)) return false; return true; };
   let a = 0;
-  let z = out.length;
-  while (a < z && out[a] === 0) a++;
-  while (z > a && out[z - 1] === 0) z--;
-  return out.slice(a, z);
+  let z = w;
+  while (a < z && colEmpty(a)) a++;
+  while (z > a && colEmpty(z - 1)) z--;
+  const out = new Uint8Array((z - a) * per);
+  for (let x = a; x < z; x++) {
+    for (let y = 0; y < h; y++) {
+      if (on(x, y)) out[(x - a) * per + (y >> 3)] |= 1 << (y & 7);
+    }
+  }
+  return { bits: out, w: z - a };
 }
 
-// Alle Rasterzellen auf der Linie von (x0, y0) nach (x1, y1), Endpunkte eingeschlossen.
+// Ist im Textstreifen das Pixel (x, y) gesetzt?
+export const stripBit = (bits, h, x, y) => (bits[x * Math.ceil(h / 8) + (y >> 3)] >> (y & 7)) & 1;
+
+// Alle Punkte auf der Linie von (x0, y0) nach (x1, y1), Endpunkte eingeschlossen.
 // Damit beim schnellen Wischen mit dem Finger keine Lücken entstehen.
 export function cellsOnLine(x0, y0, x1, y1) {
   const out = [];
@@ -61,34 +44,18 @@ export function cellsOnLine(x0, y0, x1, y1) {
   }
 }
 
-// Macht ein 16x8-Foto für die LED-Punkte kräftiger: Helligkeit auf den vollen Bereich strecken
-// (dunkelste Stelle wird fast aus, hellste voll an) und Farben satter machen.
-// Fotos wirken auf 128 Punkten sonst grau und flau.
-export function enhanceFrame(frame, { saturation = 1.8, gamma = 1.3 } = {}) {
-  const n = W * H;
-  let lo = 255;
-  let hi = 0;
-  for (let i = 0; i < n; i++) {
-    const v = Math.max(frame[i * 3], frame[i * 3 + 1], frame[i * 3 + 2]);
-    if (v < lo) lo = v;
-    if (v > hi) hi = v;
-  }
-  const out = new Uint8Array(frame.length);
-  const range = hi - lo;
-  for (let i = 0; i < n; i++) {
-    const r = frame[i * 3];
-    const g = frame[i * 3 + 1];
-    const b = frame[i * 3 + 2];
-    const max = Math.max(r, g, b);
-    if (max === 0) continue;
-    const v = range > 0 ? ((max - lo) / range) ** gamma : max / 255;
-    // Sättigung erhöhen: Abstand jedes Kanals zum hellsten Kanal vergrössern.
-    const scale = (v * 255) / max;
-    for (let k = 0; k < 3; k++) {
-      const c = frame[i * 3 + k];
-      const boosted = max - (max - c) * saturation;
-      out[i * 3 + k] = Math.round(Math.min(255, Math.max(0, boosted * scale)));
+// Malt einen gefüllten Kreis (Pinsel) mit Radius r in ein RGBA-Bild. Ohne Kantenglättung,
+// damit nur echte Farben entstehen und das Bild sich gut komprimieren lässt.
+export function stampDisc(rgba, w, h, cx, cy, r, rgb) {
+  const r2 = r * r + r; // etwas runder als r*r bei kleinen Radien
+  for (let y = Math.max(0, cy - r); y <= Math.min(h - 1, cy + r); y++) {
+    for (let x = Math.max(0, cx - r); x <= Math.min(w - 1, cx + r); x++) {
+      if ((x - cx) ** 2 + (y - cy) ** 2 > r2) continue;
+      const i = (y * w + x) * 4;
+      rgba[i] = rgb[0];
+      rgba[i + 1] = rgb[1];
+      rgba[i + 2] = rgb[2];
+      rgba[i + 3] = 255;
     }
   }
-  return out;
 }

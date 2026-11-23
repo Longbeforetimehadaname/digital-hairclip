@@ -20,7 +20,8 @@ function fakeCtx(canvas) {
   return {
     canvas, font: '', fillStyle: '', shadowColor: '', shadowBlur: 0, imageSmoothingEnabled: true,
     imageSmoothingQuality: '', textBaseline: '',
-    fillRect() {}, beginPath() {}, arc() {}, fill() {}, drawImage() {},
+    fillRect() {}, beginPath() {}, arc() {}, fill() {}, drawImage() {}, putImageData() {},
+    createImageData(w, h) { return { data: new Uint8ClampedArray(w * h * 4), width: w, height: h }; },
     fillText(t) { lastText = t; },
     measureText(t) { return { width: t.length * 5 }; },
     getImageData(x, y, w, h) {
@@ -62,7 +63,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 test('Start: Presets, Farbfelder, Text-Spalten, Status', () => {
   assert.equal(window.document.querySelectorAll('#presets button').length, 4);
   assert.equal(window.document.querySelectorAll('#swatches button').length, 8);
-  assert.ok(state().text.cols.length > 0);
+  assert.ok(state().text.w > 0);
   assert.equal($('#status').textContent, 'Nur Vorschau');
   assert.equal($('#support').hidden, false); // jsdom hat kein Web Bluetooth
 });
