@@ -27,7 +27,8 @@ jobs:
       - run: npm test
 
   deploy:
-    if: github.ref == 'refs/heads/main'
+    # Nur bei öffentlichem Repo: Mit einem Gratiskonto gibt es Pages nicht für private Repos.
+    if: github.ref == 'refs/heads/main' && !github.event.repository.private
     needs: test
     runs-on: ubuntu-latest
     environment:
