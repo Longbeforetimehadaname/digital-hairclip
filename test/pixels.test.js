@@ -1,6 +1,27 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { textStrip, stripBit, cellsOnLine, stampDisc } from '../web/pixels.js';
+import { textStrip, stripBit, cellsOnLine, stampDisc, floodFill, coverRect } from '../web/pixels.js';
+
+test('floodFill: füllt nur die zusammenhängende Fläche', () => {
+  const w = 5;
+  const h = 3;
+  const d = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) { const i = (y * w + 2) * 4; d[i] = 255; } // senkrechte rote Wand in Spalte 2
+  const n = floodFill(d, w, h, 0, 0, [0, 0, 255]);
+  assert.equal(n, 6);
+  assert.equal(d[(0 * w + 4) * 4 + 2], 0, 'rechts der Wand bleibt leer');
+  assert.equal(d[(2 * w + 1) * 4 + 2], 255);
+  assert.equal(floodFill(d, w, h, 0, 0, [0, 0, 255]), 0, 'gleiche Farbe: nichts zu tun');
+});
+
+test('coverRect: füllt aus und verschiebt den Ausschnitt', () => {
+  const mid = coverRect(1000, 1000, 320, 170, 0.5);
+  assert.equal(mid.w, 320);
+  assert.equal(mid.h, 320);
+  assert.equal(mid.y, -75);
+  assert.ok(coverRect(1000, 1000, 320, 170, 0).y === 0);
+  assert.equal(coverRect(1000, 1000, 320, 170, 1).y, -150);
+});
 
 // Baut ein RGBA-Bild aus Zeichen-Zeilen ('#' = deckend, '+' = halb durchsichtig, '.' = leer).
 function image(rows) {

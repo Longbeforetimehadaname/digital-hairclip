@@ -51,6 +51,7 @@ def('HTMLCanvasElement', window.HTMLCanvasElement);
 def('navigator', window.navigator);
 def('requestAnimationFrame', window.requestAnimationFrame);
 def('Image', window.Image);
+def('localStorage', window.localStorage);
 
 await import(pathToFileURL(path.join(webDir, 'app.js')).href);
 await new Promise((r) => setTimeout(r, 200));
@@ -60,15 +61,26 @@ const click = (s) => $(s).dispatchEvent(new window.MouseEvent('click', { bubbles
 const state = () => window.__hairclip.state;
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-test('Start: Presets, Farbfelder, Text-Spalten, Status', () => {
+test('Start: Animationen, Farbfelder, Text-Streifen, Status', () => {
   assert.equal(window.document.querySelectorAll('#presets button').length, 4);
-  assert.equal(window.document.querySelectorAll('#swatches button').length, 8);
+  assert.equal(window.document.querySelectorAll('#text-swatches button').length, 8);
+  assert.equal(window.document.querySelectorAll('[role="tab"]').length, 6);
   assert.ok(state().text.w > 0);
-  assert.equal($('#status').textContent, 'Nur Vorschau');
+  assert.equal($('#status').textContent, 'offline');
   assert.equal($('#support').hidden, false); // jsdom hat kein Web Bluetooth
 });
 
-test('Zeichnen: Bilder kopieren, abspielen, löschen', () => {
+test('Text: Zeichen einfügen und Farbe wählen', () => {
+  const input = $('#text-input');
+  input.value = 'Hi';
+  input.setSelectionRange(2, 2);
+  click('[data-symbol="♥"]');
+  assert.equal(state().text.value, 'Hi♥');
+  click('#text-swatches button:nth-child(5)');
+  assert.equal(state().text.color, '#5ec8ff');
+});
+
+test('Zeichnen: Bilder kopieren, abspielen, löschen, zurück', () => {
   click('#tab-draw');
   assert.equal($('#panel-draw').hidden, false);
   assert.equal($('#panel-text').hidden, true);
@@ -79,12 +91,36 @@ test('Zeichnen: Bilder kopieren, abspielen, löschen', () => {
   click('#frame-del');
   assert.equal(state().draw.frames.length, 1);
   assert.equal(state().draw.playing, false);
+  assert.equal($('#undo').disabled, false);
+  click('#undo');
+  assert.equal(state().draw.frames.length, 2, 'Löschen rückgängig');
+  click('#tool-fill');
+  assert.equal(state().draw.tool, 'fill');
 });
 
-test('Tabs wechseln', () => {
-  click('#tab-preset');
-  click('#tab-photo');
+test('Tarot: Karten ziehen, Deutung und Verlauf', () => {
+  click('#tab-tarot');
+  click('#tarot-three');
+  assert.equal(state().tarot.cards.length, 3);
+  assert.equal(window.document.querySelectorAll('#tarot-reading li').length, 3);
+  click('#tarot-one');
+  assert.equal(window.document.querySelectorAll('#tarot-reading li').length, 1);
+  assert.ok(window.document.querySelectorAll('#tarot-history li').length >= 2);
+  click('#tarot-clear');
+  assert.equal(window.document.querySelectorAll('#tarot-history li').length, 0);
+});
+
+test('Tarot: Meldung vom Clip wird angezeigt', () => {
   click('#tab-text');
+  window.__hairclip.onClipPacket(6, Uint8Array.of(1, 0, 1));
+  assert.equal($('#panel-tarot').hidden, false);
+  assert.deepEqual(state().tarot.cards, [{ id: 0, reversed: true }]);
+  assert.match($('#tarot-reading').textContent, /Der Narr/);
+  assert.match($('#tarot-reading').textContent, /umgekehrt/);
+});
+
+test('Bereiche wechseln', () => {
+  for (const t of ['preset', 'photo', 'clock', 'text']) click(`#tab-${t}`);
   assert.equal($('#panel-text').hidden, false);
 });
 
@@ -96,11 +132,11 @@ test('Senden ohne Web Bluetooth: verständliche Fehlermeldung statt Absturz', as
 });
 
 test('Foto senden ohne Foto: Hinweis', async () => {
+  click('#tab-photo');
   click('[data-send="photo"]');
   await wait(50);
   assert.match($('#msg').textContent, /Foto/);
 });
-
 after(() => {
   stopped = true;
   window.close();

@@ -1,33 +1,40 @@
 import {
-  W, H, TEXT_H,
-  animPackets, textPacket, photoPackets, brightnessPacket, offPacket, concat,
+  W, H, TEXT_H, TYPE,
+  animPackets, textPacket, photoPackets, brightnessPacket, offPacket, tarotPacket, clockPacket, parseTarot, concat,
 } from './protocol.js';
 import { PRESETS, blank } from './presets.js';
 import { HairclipLink } from './ble.js';
-import { textStrip, stripBit, cellsOnLine, stampDisc } from './pixels.js';
+import { textStrip, stripBit, cellsOnLine, stampDisc, floodFill, coverRect } from './pixels.js';
+import { drawCards, reading } from './tarot.js';
+import {
+  Surface, tarotScene, shuffleScene, clockScene, clockFields, SHUFFLE_STEPS, SHUFFLE_MS, SPREAD_MS,
+} from './scene.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const hexToRgb = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 
 const MAX_DRAW_FRAMES = 8;
-const SWATCHES = [
-  ['#ff4d9d', 'Pink'], ['#ff9ac4', 'Rosa'], ['#ffd166', 'Gelb'], ['#7bf1a8', 'Grün'],
-  ['#5ec8ff', 'Blau'], ['#b69cff', 'Lila'], ['#ffffff', 'Weiss'], ['#ff5a4d', 'Rot'],
+const MAX_UNDO = 20;
+const COLORS = [
+  ['#ff2d87', 'Pink'], ['#ff9ac4', 'Rosa'], ['#ffd166', 'Gelb'], ['#7bf1a8', 'Grün'],
+  ['#5ec8ff', 'Blau'], ['#b69cff', 'Lila'], ['#ffffff', 'Weiss'], ['#ff5a3c', 'Rot'],
 ];
 
 const state = {
   tab: 'text',
   brightness: 200,
-  text: { value: 'Hallo Schatz', color: '#ff5fa8', speed: 4, bits: new Uint8Array(0), w: 0 },
-  draw: { frames: [blank()], cur: 0, fps: 5, playing: false, color: '#ff4d9d', tool: 'pen', size: 4 },
+  text: { value: 'Hallo Schatz', color: '#ff2d87', speed: 4, bits: new Uint8Array(0), w: 0 },
+  draw: { frames: [blank()], cur: 0, fps: 5, playing: false, color: '#ff2d87', tool: 'pen', size: 4, undo: [] },
   preset: { id: PRESETS[0].id, frames: PRESETS[0].make(), fps: PRESETS[0].fps },
-  photo: { rgba: null },
+  photo: { rgba: null, img: null, pos: 0.5 },
+  tarot: { cards: null, start: 0 },
+  clock: { style: 0, color: '#ffffff' },
 };
 
-const link = new HairclipLink({ onChange: updateStatus });
+const link = new HairclipLink({ onChange: updateStatus, onPacket: onClipPacket });
 
-/* ---------- Vorschau-Bildschirm: zeigt genau die 320 × 170 Pixel des Clips ---------- */
+/* ---------- Vorschau: zeigt genau die 320 × 170 Pixel des Clips ---------- */
 
 const screen = $('#screen');
 const sctx = screen.getContext('2d');
@@ -38,7 +45,18 @@ function paintFrame(rgba) {
   sctx.putImageData(screenImg, 0, 0);
 }
 
-// Text wie im Clip: Streifen senkrecht mittig, scrollt von rechts nach links (siehe docs/PROTOCOL.md).
+// Szenen, die der Clip selbst zeichnet (Tarot, Uhr), nur neu berechnen, wenn sich etwas ändert
+const sceneSurface = new Surface();
+let sceneKey = '';
+function paintScene(key, drawFn) {
+  if (key !== sceneKey) {
+    sceneKey = key;
+    drawFn(sceneSurface);
+  }
+  paintFrame(sceneSurface.d);
+}
+
+// Lauftext wie im Clip: Streifen senkrecht mittig, scrollt von rechts nach links (siehe docs/PROTOCOL.md)
 let textCanvas = null;
 function rebuildTextCanvas() {
   const { bits, w } = state.text;
@@ -68,6 +86,31 @@ function paintText(t) {
   sctx.drawImage(textCanvas, W - o, Math.floor((H - TEXT_H) / 2));
 }
 
+function paintTarot(now) {
+  const { cards, start } = state.tarot;
+  if (!cards) {
+    paintScene('tarot-empty', (s) => shuffleScene(s, 0));
+    return;
+  }
+  const t = now - start;
+  const shuffleEnd = SHUFFLE_STEPS * SHUFFLE_MS;
+  if (t < shuffleEnd) {
+    const step = Math.floor(t / SHUFFLE_MS);
+    paintScene(`shuffle-${start}-${step}`, (s) => shuffleScene(s, step));
+  } else {
+    const i = cards.length === 3 ? Math.floor((t - shuffleEnd) / SPREAD_MS) % 3 : 0;
+    paintScene(`tarot-${start}-${i}`, (s) => tarotScene(s, cards, i));
+  }
+}
+
+function paintClock() {
+  const now = new Date();
+  const local = Math.floor(now.getTime() / 1000) - now.getTimezoneOffset() * 60;
+  const f = clockFields(local);
+  const { style, color } = state.clock;
+  paintScene(`clock-${local}-${style}-${color}`, (s) => clockScene(s, f, hexToRgb(color), style));
+}
+
 function paint(t) {
   switch (state.tab) {
     case 'text':
@@ -88,6 +131,12 @@ function paint(t) {
       if (state.photo.rgba) paintFrame(state.photo.rgba);
       else { sctx.fillStyle = '#000'; sctx.fillRect(0, 0, W, H); }
       break;
+    case 'tarot':
+      paintTarot(t * 1000);
+      break;
+    case 'clock':
+      paintClock();
+      break;
     default:
       break;
   }
@@ -98,15 +147,42 @@ function paint(t) {
   }
 }
 
+let clockMs = 0;
 function loop(ms) {
+  clockMs = ms;
   paint(ms / 1000);
   requestAnimationFrame(loop);
+}
+
+/* ---------- Farbfelder (mit eigener Farbe am Schluss) ---------- */
+
+function swatches(box, get, set) {
+  const sync = () => {
+    $$('button', box).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.color === get())));
+    custom.value = get();
+  };
+  COLORS.forEach(([hex, name]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.style.background = hex;
+    b.dataset.color = hex;
+    b.setAttribute('aria-label', name);
+    b.addEventListener('click', () => { set(hex); sync(); });
+    box.append(b);
+  });
+  const custom = document.createElement('input');
+  custom.type = 'color';
+  custom.setAttribute('aria-label', 'Eigene Farbe');
+  custom.addEventListener('input', () => { set(custom.value); sync(); });
+  box.append(custom);
+  sync();
 }
 
 /* ---------- Text ---------- */
 
 // Zeichnet den Text gross mit der Schrift „Nunito“ (fett) und macht daraus einen Streifen
 // aus gesetzten und leeren Pixeln (ohne Kantenglättung, genau so zeigt ihn der Clip).
+// Zeichen, die Nunito nicht hat (♥ ★ …), nimmt der Browser aus einer Ersatzschrift.
 const FONT = `800 80px "Nunito", system-ui, sans-serif`;
 function buildStrip(text) {
   const t = text.trim() ? text : '';
@@ -131,9 +207,22 @@ function refreshText() {
   rebuildTextCanvas();
 }
 
-$('#text-input').addEventListener('input', (e) => { state.text.value = e.target.value; refreshText(); });
-$('#text-color').addEventListener('input', (e) => { state.text.color = e.target.value; rebuildTextCanvas(); });
+const textInput = $('#text-input');
+textInput.addEventListener('input', () => { state.text.value = textInput.value; refreshText(); });
 $('#text-speed').addEventListener('input', (e) => { state.text.speed = Number(e.target.value); });
+swatches($('#text-swatches'), () => state.text.color, (c) => { state.text.color = c; rebuildTextCanvas(); });
+$$('[data-symbol]').forEach((b) => b.addEventListener('click', () => {
+  const s = b.dataset.symbol;
+  const v = textInput.value;
+  const a = textInput.selectionStart ?? v.length;
+  const z = textInput.selectionEnd ?? v.length;
+  if (v.length - (z - a) + s.length > textInput.maxLength) return;
+  textInput.value = v.slice(0, a) + s + v.slice(z);
+  textInput.setSelectionRange(a + s.length, a + s.length);
+  textInput.focus();
+  state.text.value = textInput.value;
+  refreshText();
+}));
 
 /* ---------- Zeichnen ---------- */
 
@@ -177,18 +266,33 @@ function syncDraw() {
   play.disabled = d.frames.length < 2;
   $('#frame-add').disabled = d.frames.length >= MAX_DRAW_FRAMES;
   $('#frame-del').disabled = d.frames.length < 2;
-  $('#tool-pen').setAttribute('aria-pressed', String(d.tool === 'pen'));
-  $('#tool-eraser').setAttribute('aria-pressed', String(d.tool === 'eraser'));
+  $('#undo').disabled = d.undo.length === 0;
+  for (const tool of ['pen', 'fill', 'eraser']) $(`#tool-${tool}`).setAttribute('aria-pressed', String(d.tool === tool));
+}
+
+// Vor jeder Änderung den alten Zustand merken (für „Zurück“)
+function remember() {
+  const d = state.draw;
+  d.undo.push({ frames: d.frames.map((f) => new Uint8ClampedArray(f)), cur: d.cur });
+  if (d.undo.length > MAX_UNDO) d.undo.shift();
 }
 
 let painting = false;
 let lastPoint = null; // letzter gemalter Punkt, damit schnelle Striche durchgehend werden
 
-function paintAt(e) {
+function pointFrom(e) {
   const r = editor.getBoundingClientRect();
-  if (!r.width || !r.height) return;
-  const x = Math.min(W - 1, Math.max(0, Math.floor(((e.clientX - r.left) / r.width) * W)));
-  const y = Math.min(H - 1, Math.max(0, Math.floor(((e.clientY - r.top) / r.height) * H)));
+  if (!r.width || !r.height) return null;
+  return [
+    Math.min(W - 1, Math.max(0, Math.floor(((e.clientX - r.left) / r.width) * W))),
+    Math.min(H - 1, Math.max(0, Math.floor(((e.clientY - r.top) / r.height) * H))),
+  ];
+}
+
+function paintAt(e) {
+  const p = pointFrom(e);
+  if (!p) return;
+  const [x, y] = p;
   const f = state.draw.frames[state.draw.cur];
   const rgb = state.draw.tool === 'pen' ? hexToRgb(state.draw.color) : [0, 0, 0];
   const size = state.draw.tool === 'pen' ? state.draw.size : state.draw.size + 3; // Radierer etwas grösser
@@ -199,39 +303,51 @@ function paintAt(e) {
 }
 
 editor.addEventListener('pointerdown', (e) => {
+  state.draw.playing = false;
+  if (state.draw.tool === 'fill') {
+    const p = pointFrom(e);
+    if (!p) return;
+    remember();
+    if (!floodFill(state.draw.frames[state.draw.cur], W, H, p[0], p[1], hexToRgb(state.draw.color))) state.draw.undo.pop();
+    syncDraw();
+    return;
+  }
   editor.setPointerCapture(e.pointerId);
+  remember();
   painting = true;
   lastPoint = null;
-  state.draw.playing = false;
   paintAt(e);
 });
 editor.addEventListener('pointermove', (e) => { if (painting) paintAt(e); });
-['pointerup', 'pointercancel'].forEach((name) =>
-  editor.addEventListener(name, () => { painting = false; lastPoint = null; syncDraw(); }));
+['pointerup', 'pointercancel'].forEach((name) => editor.addEventListener(name, () => {
+  if (!painting) return;
+  painting = false;
+  lastPoint = null;
+  syncDraw();
+}));
 
-SWATCHES.forEach(([hex, name]) => {
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.style.background = hex;
-  b.setAttribute('aria-label', name);
-  b.addEventListener('click', () => {
-    state.draw.color = hex;
-    state.draw.tool = 'pen';
-    $('#draw-color').value = hex;
-    syncDraw();
-  });
-  $('#swatches').append(b);
+swatches($('#draw-swatches'), () => state.draw.color, (c) => {
+  state.draw.color = c;
+  if (state.draw.tool === 'eraser') state.draw.tool = 'pen';
+  syncDraw();
 });
-
-$('#draw-color').addEventListener('input', (e) => { state.draw.color = e.target.value; state.draw.tool = 'pen'; syncDraw(); });
-$('#tool-pen').addEventListener('click', () => { state.draw.tool = 'pen'; syncDraw(); });
-$('#tool-eraser').addEventListener('click', () => { state.draw.tool = 'eraser'; syncDraw(); });
+for (const tool of ['pen', 'fill', 'eraser']) $(`#tool-${tool}`).addEventListener('click', () => { state.draw.tool = tool; syncDraw(); });
+$('#undo').addEventListener('click', () => {
+  const d = state.draw;
+  const prev = d.undo.pop();
+  if (!prev) return;
+  d.frames = prev.frames;
+  d.cur = Math.min(prev.cur, d.frames.length - 1);
+  d.playing = false;
+  syncDraw();
+});
 $('#brush').addEventListener('input', (e) => { state.draw.size = Number(e.target.value); });
 $('#draw-fps').addEventListener('input', (e) => { state.draw.fps = Number(e.target.value); });
 
 $('#frame-add').addEventListener('click', () => {
   const d = state.draw;
   if (d.frames.length >= MAX_DRAW_FRAMES) return;
+  remember();
   d.frames.splice(d.cur + 1, 0, new Uint8ClampedArray(d.frames[d.cur]));
   d.cur += 1;
   syncDraw();
@@ -239,12 +355,13 @@ $('#frame-add').addEventListener('click', () => {
 $('#frame-del').addEventListener('click', () => {
   const d = state.draw;
   if (d.frames.length < 2) return;
+  remember();
   d.frames.splice(d.cur, 1);
   d.cur = Math.min(d.cur, d.frames.length - 1);
   if (d.frames.length < 2) d.playing = false;
   syncDraw();
 });
-$('#frame-clear').addEventListener('click', () => { state.draw.frames[state.draw.cur] = blank(); syncDraw(); });
+$('#frame-clear').addEventListener('click', () => { remember(); state.draw.frames[state.draw.cur] = blank(); syncDraw(); });
 $('#frame-play').addEventListener('click', () => {
   if (state.draw.frames.length < 2) return;
   state.draw.playing = !state.draw.playing;
@@ -259,8 +376,8 @@ function renderPresets() {
   PRESETS.forEach((p) => {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'btn';
     b.textContent = p.name;
+    b.dataset.info = `${p.fps} Bilder/s`;
     b.setAttribute('aria-pressed', String(p.id === state.preset.id));
     b.addEventListener('click', () => {
       state.preset = { id: p.id, frames: p.make(), fps: p.fps };
@@ -272,24 +389,22 @@ function renderPresets() {
 
 /* ---------- Foto ---------- */
 
-// Füllt das ganze Display, schneidet überstehende Ränder ab (wie „cover“).
-function coverPixels(img) {
+function coverPixels(img, pos) {
   const c = document.createElement('canvas');
   c.width = W;
   c.height = H;
   const x = c.getContext('2d', { willReadFrequently: true });
   x.imageSmoothingQuality = 'high';
-  const s = Math.max(W / img.width, H / img.height);
-  const dw = img.width * s;
-  const dh = img.height * s;
   x.fillStyle = '#000';
   x.fillRect(0, 0, W, H);
-  x.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  const r = coverRect(img.width, img.height, W, H, pos);
+  x.drawImage(img, r.x, r.y, r.w, r.h);
   const data = new Uint8ClampedArray(x.getImageData(0, 0, W, H).data);
   for (let i = 3; i < data.length; i += 4) data[i] = 255;
   return data;
 }
 
+const photoPos = $('#photo-pos');
 $('#photo-file').addEventListener('change', async (e) => {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
@@ -298,14 +413,103 @@ $('#photo-file').addEventListener('change', async (e) => {
     const img = new Image();
     img.src = url;
     await img.decode();
-    state.photo.rgba = coverPixels(img);
-    setMsg('Foto geladen.');
+    state.photo.img = img;
+    state.photo.rgba = coverPixels(img, state.photo.pos);
+    photoPos.disabled = false;
+    setMsg('Foto geladen. Mit „Ausschnitt“ verschieben.');
   } catch {
     setMsg('Dieses Bild konnte nicht gelesen werden. Probier ein JPG oder PNG.', true);
   } finally {
     URL.revokeObjectURL(url);
   }
 });
+photoPos.addEventListener('input', () => {
+  state.photo.pos = Number(photoPos.value) / 100;
+  if (state.photo.img) state.photo.rgba = coverPixels(state.photo.img, state.photo.pos);
+});
+
+/* ---------- Tarot ---------- */
+
+const HISTORY_KEY = 'hairclip.tarot';
+const store = {
+  load() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch { return []; }
+  },
+  save(list) {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list.slice(0, 30))); } catch { /* privat: ohne Verlauf */ }
+  },
+};
+
+function renderReading() {
+  const box = $('#tarot-reading');
+  box.replaceChildren();
+  if (!state.tarot.cards) return;
+  for (const r of reading(state.tarot.cards)) {
+    const li = document.createElement('li');
+    const pos = Object.assign(document.createElement('span'), { className: 'pos', textContent: r.label });
+    const name = Object.assign(document.createElement('span'), { className: 'name', textContent: r.name });
+    li.append(pos, name);
+    if (r.reversed) li.append(Object.assign(document.createElement('span'), { className: 'rev', textContent: 'umgekehrt' }));
+    li.append(Object.assign(document.createElement('span'), { className: 'words', textContent: r.words.join(' · ') }));
+    box.append(li);
+  }
+}
+
+function renderHistory() {
+  const box = $('#tarot-history');
+  box.replaceChildren();
+  for (const entry of store.load()) {
+    const li = document.createElement('li');
+    const when = new Date(entry.t);
+    const time = Object.assign(document.createElement('time'), {
+      dateTime: entry.t,
+      textContent: `${when.toLocaleDateString('de-CH')} ${when.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}`,
+    });
+    const names = reading(entry.cards).map((r) => (r.reversed ? `${r.name} (umgekehrt)` : r.name)).join(', ');
+    li.append(time, document.createTextNode(` – ${names}`));
+    box.append(li);
+  }
+  $('#tarot-clear').hidden = !box.children.length;
+}
+
+function showTarot(cards, from) {
+  state.tarot = { cards, start: clockMs };
+  sceneKey = '';
+  renderReading();
+  store.save([{ t: new Date().toISOString(), cards, from }, ...store.load()]);
+  renderHistory();
+}
+
+async function drawTarot(count) {
+  const cards = drawCards(count);
+  showTarot(cards, 'web');
+  if (!link.connected) { setMsg('Nur Vorschau. Verbunden legt der Clip die Karten mit.'); return; }
+  try {
+    await link.send(tarotPacket(cards));
+    setMsg('Karten liegen auch auf dem Clip.');
+  } catch (e) {
+    setMsg(errorText(e), true);
+  }
+}
+
+$('#tarot-one').addEventListener('click', () => drawTarot(1));
+$('#tarot-three').addEventListener('click', () => drawTarot(3));
+$('#tarot-clear').addEventListener('click', () => { store.save([]); renderHistory(); });
+
+// Meldungen vom Clip (über Bluetooth)
+function onClipPacket(type, payload) {
+  if (type !== TYPE.TAROT) return;
+  const cards = parseTarot(payload);
+  if (!cards) return;
+  selectTab('tarot');
+  showTarot(cards, 'clip');
+  setMsg(cards.length === 3 ? 'Am Clip wurden drei Karten gezogen.' : 'Am Clip wurde eine Karte gezogen.');
+}
+
+/* ---------- Uhr ---------- */
+
+$$('input[name="clock-style"]').forEach((r) => r.addEventListener('change', () => { if (r.checked) state.clock.style = Number(r.value); }));
+swatches($('#clock-swatches'), () => state.clock.color, (c) => { state.clock.color = c; });
 
 /* ---------- Verbindung und Senden ---------- */
 
@@ -318,9 +522,10 @@ function setMsg(text, isError = false) {
 }
 
 function updateStatus() {
-  $('#status').textContent = link.connected ? 'Mit Clip verbunden' : 'Nur Vorschau';
+  $('#status').textContent = link.connected ? 'verbunden' : 'offline';
   $('#dot').classList.toggle('on', link.connected);
-  $('#connect').textContent = link.connected ? 'Trennen' : 'Mit Clip verbinden';
+  $('#connect').textContent = link.connected ? 'Trennen' : 'Verbinden';
+  $('#connect').classList.toggle('on', link.connected);
 }
 
 function errorText(e) {
@@ -370,6 +575,7 @@ const senders = {
     if (!state.photo.rgba) throw new RangeError('Wähle zuerst ein Foto aus.');
     return concat(photoPackets(state.photo.rgba));
   },
+  clock: () => clockPacket(new Date(), hexToRgb(state.clock.color), state.clock.style),
 };
 
 $$('[data-send]').forEach((b) => b.addEventListener('click', () => transmit(senders[b.dataset.send])));
@@ -393,12 +599,13 @@ bright.addEventListener('change', async () => {
   try { await link.send(brightnessPacket(state.brightness)); } catch { /* beim nächsten Senden erneut */ }
 });
 
-/* ---------- Tabs ---------- */
+/* ---------- Moduswahl ---------- */
 
 const tabs = $$('[role="tab"]');
 function selectTab(name, focus = false) {
-  if (state.tab !== name) setMsg(''); // alte Meldung (z. B. „Foto geladen.“) gehört nicht zum neuen Tab
+  if (state.tab !== name) setMsg(''); // alte Meldung (z. B. „Foto geladen.“) gehört nicht zum neuen Bereich
   state.tab = name;
+  sceneKey = '';
   tabs.forEach((t) => {
     const on = t.id === `tab-${name}`;
     t.setAttribute('aria-selected', String(on));
@@ -428,6 +635,7 @@ if (!HairclipLink.supported) $('#support').hidden = false;
 renderPresets();
 syncDraw();
 updateStatus();
+renderHistory();
 refreshText();
 if (document.fonts && document.fonts.load) {
   document.fonts.load(FONT, 'Hallo ÄÖÜ').then(refreshText).catch(() => {});
@@ -435,4 +643,4 @@ if (document.fonts && document.fonts.load) {
 requestAnimationFrame(loop);
 
 // Zugriff für den Smoke-Test (test/app.smoke.test.js)
-window.__hairclip = { state };
+window.__hairclip = { state, onClipPacket };

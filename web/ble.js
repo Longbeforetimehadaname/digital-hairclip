@@ -1,11 +1,14 @@
 // Dünne Hülle um Web Bluetooth. Funktioniert in Chrome (Android, Desktop) und in der iOS-App „Bluefy“.
-import { SERVICE_UUID, RX_UUID, DEVICE_NAME_PREFIX, chunks } from './protocol.js';
+import { SERVICE_UUID, RX_UUID, TX_UUID, DEVICE_NAME_PREFIX, chunks, PacketReader } from './protocol.js';
 
 export class HairclipLink {
-  constructor({ onChange } = {}) {
+  // onChange: Verbindung hat sich geändert. onPacket(type, payload): der Clip hat etwas gemeldet.
+  constructor({ onChange, onPacket } = {}) {
     this.onChange = onChange || (() => {});
+    this.reader = new PacketReader(onPacket || (() => {}));
     this.device = null;
     this.rx = null;
+    this.tx = null;
     this.busy = false;
   }
 
@@ -28,18 +31,32 @@ export class HairclipLink {
       });
       this.device.addEventListener('gattserverdisconnected', () => {
         this.rx = null;
+        this.tx = null;
         this.onChange();
       });
     }
     const server = await this.device.gatt.connect();
     const service = await server.getPrimaryService(SERVICE_UUID);
     this.rx = await service.getCharacteristic(RX_UUID);
+    try {
+      // Meldungen vom Clip (z. B. am Clip gezogene Tarot-Karten). Ältere Firmware hat das nicht: dann ohne.
+      this.tx = await service.getCharacteristic(TX_UUID);
+      this.reader.reset();
+      this.tx.addEventListener('characteristicvaluechanged', (e) => {
+        const v = e.target.value;
+        this.reader.push(new Uint8Array(v.buffer, v.byteOffset, v.byteLength));
+      });
+      await this.tx.startNotifications();
+    } catch {
+      this.tx = null;
+    }
     this.onChange();
   }
 
   disconnect() {
     if (this.device && this.device.gatt && this.device.gatt.connected) this.device.gatt.disconnect();
     this.rx = null;
+    this.tx = null;
     this.onChange();
   }
 

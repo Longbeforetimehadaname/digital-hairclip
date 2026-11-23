@@ -8,10 +8,12 @@ export const FRAME_BYTES = W * H * 4; // Bilder im Browser: RGBA, Zeile für Zei
 // Nordic UART Service: Standard-UUIDs, funktionieren auch mit Test-Apps wie nRF Connect.
 export const SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
 export const RX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // Webseite schreibt hierhin
+export const TX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // Clip meldet sich hier (Notify)
 export const DEVICE_NAME_PREFIX = 'Hairclip';
 
 export const MAGIC = 0xa5;
-export const TYPE = { FRAME: 1, TEXT: 2, PHOTO: 3, BRIGHTNESS: 4, OFF: 5 };
+export const TYPE = { FRAME: 1, TEXT: 2, PHOTO: 3, BRIGHTNESS: 4, OFF: 5, TAROT: 6, CLOCK: 7 };
+export const TAROT_CARDS = 78;
 export const MAX_PAYLOAD = 40000; // grösste erlaubte Nutzdaten pro Paket (Puffer in der Firmware)
 export const MAX_ANIM_FRAMES = 16;
 export const MAX_ANIM_BYTES = 64000; // alle Bilder einer Animation zusammen, komprimiert (Speicher im Clip)
@@ -133,6 +135,72 @@ export function photoPackets(rgba) {
 
 export const brightnessPacket = (v) => packet(TYPE.BRIGHTNESS, Uint8Array.of(clamp(v, 0, 255)));
 export const offPacket = () => packet(TYPE.OFF);
+
+// Tarot: Webseite → Clip zeigt genau diese Karten. Clip → Webseite (Notify): Karten, die am Clip gezogen wurden.
+// cards: [{ id (0–77), reversed (bool) }], 1 oder 3 Karten
+export function tarotPacket(cards) {
+  if (cards.length !== 1 && cards.length !== 3) throw new RangeError('Tarot braucht 1 oder 3 Karten');
+  const p = new Uint8Array(1 + cards.length * 2);
+  p[0] = cards.length;
+  cards.forEach(({ id, reversed }, i) => {
+    if (!(id >= 0 && id < TAROT_CARDS)) throw new RangeError('Unbekannte Karte');
+    p[1 + i * 2] = id;
+    p[2 + i * 2] = reversed ? 1 : 0;
+  });
+  return packet(TYPE.TAROT, p);
+}
+
+export function parseTarot(payload) {
+  const n = payload[0];
+  if ((n !== 1 && n !== 3) || payload.length !== 1 + n * 2) return null;
+  const cards = [];
+  for (let i = 0; i < n; i++) {
+    const id = payload[1 + i * 2];
+    if (id >= TAROT_CARDS) return null;
+    cards.push({ id, reversed: payload[2 + i * 2] === 1 });
+  }
+  return cards;
+}
+
+// Uhr: aktuelle Ortszeit als Sekunden seit 1.1.1970 (u32), danach Stil (u8: 0 = gross, 1 = mit Datum),
+// Farbe r, g, b. Der Clip zählt selbst weiter.
+export function clockPacket(date, rgb, style = 0) {
+  const local = Math.floor(date.getTime() / 1000) - date.getTimezoneOffset() * 60;
+  const p = new Uint8Array(8);
+  new DataView(p.buffer).setUint32(0, local >>> 0, true);
+  p[4] = clamp(style, 0, 1);
+  p[5] = clamp(rgb[0], 0, 255);
+  p[6] = clamp(rgb[1], 0, 255);
+  p[7] = clamp(rgb[2], 0, 255);
+  return packet(TYPE.CLOCK, p);
+}
+
+// Liest Pakete aus einem Byte-Strom, der in beliebigen Stücken ankommt (wie die Firmware es tut).
+// Müll vor dem Startbyte wird übersprungen. Ruft onPacket(type, payload) für jedes ganze Paket auf.
+export class PacketReader {
+  constructor(onPacket, maxPayload = MAX_PAYLOAD) {
+    this.onPacket = onPacket;
+    this.max = maxPayload;
+    this.buf = [];
+  }
+
+  push(bytes) {
+    for (const b of bytes) this.buf.push(b);
+    for (;;) {
+      while (this.buf.length && this.buf[0] !== MAGIC) this.buf.shift();
+      if (this.buf.length < 4) return;
+      const len = this.buf[2] | (this.buf[3] << 8);
+      if (len > this.max) { this.buf.shift(); continue; }
+      if (this.buf.length < 4 + len) return;
+      const type = this.buf[1];
+      const payload = Uint8Array.from(this.buf.slice(4, 4 + len));
+      this.buf.splice(0, 4 + len);
+      this.onPacket(type, payload);
+    }
+  }
+
+  reset() { this.buf = []; }
+}
 
 // Mehrere Pakete zu einem Byte-Strom zusammenhängen (sie werden direkt nacheinander gesendet).
 export function concat(parts) {

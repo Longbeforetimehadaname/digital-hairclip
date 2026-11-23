@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Schriften für den Clip exportieren</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>body { font: 16px system-ui, sans-serif; margin: 2rem; } canvas { image-rendering: pixelated; border: 1px solid #ccc; }</style>
+</head>
+<body>
+<h1>Schriften für den Clip</h1>
+<p>Zeichnet die Schrift „Nunito“ in den Grössen, die der Clip braucht, und speichert sie als <code>tools/fonts.json</code>.
+Danach <code>node tools/gen-firmware-data.mjs</code> ausführen. Nur nötig, wenn sich Schriften oder Zeichen ändern.</p>
+<button id="save" type="button" disabled>fonts.json herunterladen</button>
+<p id="info"></p>
+<canvas id="show" width="640" height="160"></canvas>
+<script type="module">
+// 2 Bit pro Pixel (4 Deckungsstufen), damit Kanten auf dem Display weich aussehen.
+const BASIC = Array.from({ length: 95 }, (_, i) => String.fromCharCode(32 + i)).join('') + 'ÄÖÜäöü·–';
+const FONTS = [
+  { id: 'S', css: '700 15px Nunito', chars: BASIC },
+  { id: 'M', css: '800 19px Nunito', chars: BASIC },
+  { id: 'L', css: '800 24px Nunito', chars: BASIC },
+  { id: 'XL', css: '800 72px Nunito', chars: '0123456789: ' },
+];
+
+function exportFont({ id, css, chars }) {
+  const c = document.createElement('canvas');
+  c.width = 200; c.height = 200;
+  const x = c.getContext('2d', { willReadFrequently: true });
+  x.font = css;
+  const m = x.measureText('ÄgÖjy|');
+  const ascent = Math.ceil(m.fontBoundingBoxAscent);
+  const descent = Math.ceil(m.fontBoundingBoxDescent);
+  const glyphs = [];
+  for (const ch of chars) {
+    x.clearRect(0, 0, 200, 200);
+    x.font = css;
+    x.fillStyle = '#000';
+    x.textBaseline = 'alphabetic';
+    const ox = 40; const oy = 120;
+    x.fillText(ch, ox, oy);
+    const adv = Math.round(x.measureText(ch).width);
+    const d = x.getImageData(0, 0, 200, 200).data;
+    let x0 = 200, y0 = 200, x1 = -1, y1 = -1;
+    for (let y = 0; y < 200; y++) for (let xx = 0; xx < 200; xx++) {
+      if (d[(y * 200 + xx) * 4 + 3] >= 32) { x0 = Math.min(x0, xx); x1 = Math.max(x1, xx); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    }
+    if (x1 < 0) { glyphs.push({ ch, adv, w: 0, h: 0, dx: 0, dy: 0, bits: '' }); continue; }
+    const w = x1 - x0 + 1; const h = y1 - y0 + 1;
+    const bytes = new Uint8Array(Math.ceil((w * h) / 4));
+    for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) {
+      const a = d[((y0 + y) * 200 + x0 + xx) * 4 + 3];
+      const q = Math.min(3, Math.round((a / 255) * 3));
+      const i = y * w + xx;
+      bytes[i >> 2] |= q << ((i & 3) * 2);
+    }
+    glyphs.push({ ch, adv, w, h, dx: x0 - ox, dy: y0 - oy, bits: btoa(String.fromCharCode(...bytes)) });
+  }
+  return { id, css, ascent, descent, glyphs };
+}
+
+await document.fonts.load('700 15px Nunito');
+await document.fonts.load('800 24px Nunito');
+const result = { source: 'Nunito (SIL Open Font License), Google Fonts', fonts: FONTS.map(exportFont) };
+window.fontJson = JSON.stringify(result);
+document.querySelector('#info').textContent = `${result.fonts.map((f) => `${f.id}: ${f.glyphs.length} Zeichen`).join(', ')} · ${window.fontJson.length} Bytes`;
+const s = document.querySelector('#show').getContext('2d');
+s.font = '800 24px Nunito'; s.fillText('Königin der Münzen · Ässe', 10, 40);
+s.font = '700 15px Nunito'; s.fillText('Mitgefühl, Intuition, Fürsorge', 10, 70);
+const btn = document.querySelector('#save');
+btn.disabled = false;
+btn.addEventListener('click', () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([window.fontJson], { type: 'application/json' }));
+  a.download = 'fonts.json';
+  a.click();
+});
+</script>
+</body>
+</html>

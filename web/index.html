@@ -2,109 +2,164 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>Haarclip</title>
+  <meta name="theme-color" content="#e9e8e4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)">
+  <title>Hairclip</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@500&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<header class="bar">
+  <span class="mark">Hairclip</span>
+  <span class="link">
+    <span id="dot" class="led" aria-hidden="true"></span>
+    <span id="status">offline</span>
+    <button id="connect" class="key small" type="button">Verbinden</button>
+  </span>
+</header>
+
 <main>
-  <header>
-    <h1>Haarclip</h1>
-    <p class="lede">Schick Text, Zeichnungen, Animationen und Fotos an den Clip. Oben siehst du, was er zeigt.</p>
-  </header>
-
-  <section class="stage" aria-label="Vorschau">
-    <div class="clip">
-      <div class="bezel">
-        <canvas id="screen" width="320" height="170" role="img" aria-label="Vorschau des Clip-Displays"></canvas>
-      </div>
+  <section class="device" aria-label="Vorschau">
+    <div class="screen-wrap">
+      <canvas id="screen" width="320" height="170" role="img" aria-label="Vorschau des Clip-Displays"></canvas>
     </div>
-
-    <div class="link-row">
-      <span id="dot" class="dot" aria-hidden="true"></span>
-      <span id="status">Nur Vorschau</span>
-      <button id="connect" class="btn ghost" type="button">Mit Clip verbinden</button>
+    <div class="device-row">
+      <label class="lbl" for="bright">Hell</label>
+      <input id="bright" type="range" min="10" max="255" value="200">
+      <button id="off" class="key small" type="button">Aus</button>
     </div>
-    <p id="support" class="note" hidden>
-      Dieser Browser kann kein Web Bluetooth. Auf Android: Chrome benutzen. Auf dem iPhone: die App „Bluefy“ benutzen.
-      Die Vorschau funktioniert trotzdem.
+    <p id="support" class="hint" hidden>
+      Dieser Browser kann kein Bluetooth. Android: Chrome. iPhone: App „Bluefy“. Die Vorschau geht trotzdem.
     </p>
     <p id="msg" class="msg" role="status" aria-live="polite"></p>
     <progress id="progress" max="1" value="0" hidden></progress>
   </section>
 
-  <section class="bright">
-    <label for="bright">Helligkeit</label>
-    <input id="bright" type="range" min="10" max="255" value="200">
-    <button id="off" class="btn ghost" type="button">Display aus</button>
-  </section>
-
-  <div class="tabs" role="tablist" aria-label="Was soll der Clip zeigen?">
+  <nav class="modes" role="tablist" aria-label="Was soll der Clip zeigen?">
     <button role="tab" id="tab-text" aria-controls="panel-text" aria-selected="true" type="button">Text</button>
     <button role="tab" id="tab-draw" aria-controls="panel-draw" aria-selected="false" type="button" tabindex="-1">Zeichnen</button>
     <button role="tab" id="tab-preset" aria-controls="panel-preset" aria-selected="false" type="button" tabindex="-1">Animation</button>
     <button role="tab" id="tab-photo" aria-controls="panel-photo" aria-selected="false" type="button" tabindex="-1">Foto</button>
-  </div>
+    <button role="tab" id="tab-tarot" aria-controls="panel-tarot" aria-selected="false" type="button" tabindex="-1">Tarot</button>
+    <button role="tab" id="tab-clock" aria-controls="panel-clock" aria-selected="false" type="button" tabindex="-1">Uhr</button>
+  </nav>
 
   <section id="panel-text" class="panel" role="tabpanel" aria-labelledby="tab-text">
-    <label for="text-input">Nachricht</label>
+    <label class="lbl" for="text-input">Nachricht</label>
     <input id="text-input" type="text" maxlength="40" value="Hallo Schatz" autocomplete="off">
-    <div class="row">
-      <label for="text-color">Farbe</label>
-      <input id="text-color" type="color" value="#ff5fa8">
-      <label for="text-speed">Tempo</label>
+    <div class="symbols" role="group" aria-label="Zeichen einfügen">
+      <button type="button" data-symbol="♥" aria-label="Herz einfügen">♥</button>
+      <button type="button" data-symbol="★" aria-label="Stern einfügen">★</button>
+      <button type="button" data-symbol="☾" aria-label="Mond einfügen">☾</button>
+      <button type="button" data-symbol="☀" aria-label="Sonne einfügen">☀</button>
+      <button type="button" data-symbol="✿" aria-label="Blume einfügen">✿</button>
+      <button type="button" data-symbol="♪" aria-label="Note einfügen">♪</button>
+    </div>
+    <div class="line">
+      <span class="lbl">Farbe</span>
+      <div class="swatches" id="text-swatches" role="group" aria-label="Textfarbe"></div>
+    </div>
+    <div class="line">
+      <label class="lbl" for="text-speed">Tempo</label>
       <input id="text-speed" type="range" min="1" max="10" value="4">
     </div>
-    <button class="btn primary" type="button" data-send="text">An den Clip senden</button>
+    <button class="send" type="button" data-send="text">An den Clip senden</button>
   </section>
 
   <section id="panel-draw" class="panel" role="tabpanel" aria-labelledby="tab-draw" hidden>
     <canvas id="editor" width="320" height="170" aria-label="Zeichenfläche, so gross wie das Display"></canvas>
-    <div class="row swatches" id="swatches" role="group" aria-label="Farben"></div>
-    <div class="row">
-      <label for="draw-color">Eigene Farbe</label>
-      <input id="draw-color" type="color" value="#ff4d9d">
-      <button id="tool-pen" class="btn small" type="button" aria-pressed="true">Stift</button>
-      <button id="tool-eraser" class="btn small" type="button" aria-pressed="false">Radierer</button>
+    <div class="tools" role="group" aria-label="Werkzeug">
+      <button id="tool-pen" class="key" type="button" aria-pressed="true">Stift</button>
+      <button id="tool-fill" class="key" type="button" aria-pressed="false">Füllen</button>
+      <button id="tool-eraser" class="key" type="button" aria-pressed="false">Radierer</button>
+      <button id="undo" class="key" type="button" disabled>Zurück</button>
     </div>
-    <div class="row">
-      <label for="brush">Pinselgrösse</label>
+    <div class="line">
+      <span class="lbl">Farbe</span>
+      <div class="swatches" id="draw-swatches" role="group" aria-label="Zeichenfarbe"></div>
+    </div>
+    <div class="line">
+      <label class="lbl" for="brush">Pinsel</label>
       <input id="brush" type="range" min="1" max="12" value="4">
     </div>
-    <div id="frames" class="frames" role="group" aria-label="Bilder der Animation"></div>
-    <div class="row">
-      <button id="frame-add" class="btn small" type="button">Bild kopieren</button>
-      <button id="frame-del" class="btn small" type="button">Bild löschen</button>
-      <button id="frame-clear" class="btn small" type="button">Leeren</button>
-      <button id="frame-play" class="btn small" type="button">Abspielen</button>
+    <div class="line top">
+      <span class="lbl">Bilder</span>
+      <div class="frames-wrap">
+        <div id="frames" class="frames" role="group" aria-label="Bilder der Animation"></div>
+        <div class="tools">
+          <button id="frame-add" class="key small" type="button">+ Kopie</button>
+          <button id="frame-del" class="key small" type="button">Löschen</button>
+          <button id="frame-clear" class="key small" type="button">Leeren</button>
+          <button id="frame-play" class="key small" type="button">Abspielen</button>
+        </div>
+      </div>
     </div>
-    <div class="row">
-      <label for="draw-fps">Tempo</label>
+    <div class="line">
+      <label class="lbl" for="draw-fps">Tempo</label>
       <input id="draw-fps" type="range" min="1" max="15" value="5">
     </div>
-    <button class="btn primary" type="button" data-send="draw">An den Clip senden</button>
+    <button class="send" type="button" data-send="draw">An den Clip senden</button>
   </section>
 
   <section id="panel-preset" class="panel" role="tabpanel" aria-labelledby="tab-preset" hidden>
-    <div id="presets" class="presets" role="group" aria-label="Animationen"></div>
-    <button class="btn primary" type="button" data-send="preset">An den Clip senden</button>
+    <div id="presets" class="list" role="group" aria-label="Animationen"></div>
+    <button class="send" type="button" data-send="preset">An den Clip senden</button>
   </section>
 
   <section id="panel-photo" class="panel" role="tabpanel" aria-labelledby="tab-photo" hidden>
-    <label for="photo-file">Foto auswählen</label>
-    <input id="photo-file" type="file" accept="image/*">
-    <p class="note">Das Foto füllt das ganze Display, überstehende Ränder werden abgeschnitten. Senden dauert ein paar Sekunden.</p>
-    <button class="btn primary" type="button" data-send="photo">An den Clip senden</button>
+    <label class="key file">
+      Foto wählen
+      <input id="photo-file" type="file" accept="image/*">
+    </label>
+    <div class="line">
+      <label class="lbl" for="photo-pos">Ausschnitt</label>
+      <input id="photo-pos" type="range" min="0" max="100" value="50" disabled>
+    </div>
+    <p class="hint">Das Foto füllt das Display, der Rest wird abgeschnitten. Senden dauert ein paar Sekunden.</p>
+    <button class="send" type="button" data-send="photo">An den Clip senden</button>
   </section>
 
-  <footer>
-    <p class="note">Beim ersten Senden fragt der Browser nach dem Clip. Er muss eingeschaltet und in der Nähe sein.</p>
-  </footer>
+  <section id="panel-tarot" class="panel" role="tabpanel" aria-labelledby="tab-tarot" hidden>
+    <div class="tools two">
+      <button id="tarot-one" class="key" type="button">Eine Karte</button>
+      <button id="tarot-three" class="key" type="button">Drei Karten</button>
+    </div>
+    <ol id="tarot-reading" class="reading" aria-live="polite"></ol>
+    <p class="hint">Am Clip selbst: Knopf kurz drücken für eine Karte, lange drücken für drei. Ist der Clip verbunden, legt er die Karten gleich mit, und was am Clip gezogen wird, erscheint hier.</p>
+    <details class="history">
+      <summary>Frühere Legungen</summary>
+      <ol id="tarot-history"></ol>
+      <button id="tarot-clear" class="key small" type="button">Verlauf löschen</button>
+    </details>
+  </section>
+
+  <section id="panel-clock" class="panel" role="tabpanel" aria-labelledby="tab-clock" hidden>
+    <fieldset class="line">
+      <legend class="lbl">Anzeige</legend>
+      <div class="tools two">
+        <label class="key choice"><input type="radio" name="clock-style" value="0" checked> Nur Zeit</label>
+        <label class="key choice"><input type="radio" name="clock-style" value="1"> Mit Datum</label>
+      </div>
+    </fieldset>
+    <div class="line">
+      <span class="lbl">Farbe</span>
+      <div class="swatches" id="clock-swatches" role="group" aria-label="Farbe der Uhr"></div>
+    </div>
+    <p class="hint">Der Clip übernimmt die Uhrzeit vom Handy und zählt dann selbst weiter.</p>
+    <button class="send" type="button" data-send="clock">Uhr auf dem Clip starten</button>
+  </section>
 </main>
+
+<footer class="foot">
+  <p>Beim ersten Senden fragt der Browser nach dem Clip. Er muss eingeschaltet und in der Nähe sein.</p>
+</footer>
 <script type="module" src="app.js"></script>
 </body>
 </html>

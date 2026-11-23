@@ -1,0 +1,14 @@
+{
+  "name": "Hairclip",
+  "short_name": "Hairclip",
+  "description": "Fernbedienung für den digitalen Haarclip",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#e9e8e4",
+  "theme_color": "#e9e8e4",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

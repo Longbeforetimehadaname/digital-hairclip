@@ -44,6 +44,38 @@ export function cellsOnLine(x0, y0, x1, y1) {
   }
 }
 
+// Füllt die zusammenhängende Fläche gleicher Farbe ab (x, y) mit rgb (Farbeimer). Gibt die Anzahl Pixel zurück.
+export function floodFill(rgba, w, h, x, y, rgb) {
+  const at = (i) => (rgba[i * 4] << 16) | (rgba[i * 4 + 1] << 8) | rgba[i * 4 + 2];
+  const start = y * w + x;
+  const from = at(start);
+  const to = (rgb[0] << 16) | (rgb[1] << 8) | rgb[2];
+  if (from === to) return 0;
+  const stack = [start];
+  let n = 0;
+  while (stack.length) {
+    const i = stack.pop();
+    if (at(i) !== from) continue;
+    rgba[i * 4] = rgb[0]; rgba[i * 4 + 1] = rgb[1]; rgba[i * 4 + 2] = rgb[2]; rgba[i * 4 + 3] = 255;
+    n++;
+    const px = i % w;
+    if (px > 0) stack.push(i - 1);
+    if (px < w - 1) stack.push(i + 1);
+    if (i >= w) stack.push(i - w);
+    if (i < w * (h - 1)) stack.push(i + w);
+  }
+  return n;
+}
+
+// Ausschnitt für ein Foto: füllt w × h ganz aus (wie „cover“). pos von 0 bis 1 verschiebt den Ausschnitt
+// entlang der Richtung, in der das Foto übersteht (0 = links/oben, 0.5 = Mitte, 1 = rechts/unten).
+export function coverRect(imgW, imgH, w, h, pos = 0.5) {
+  const s = Math.max(w / imgW, h / imgH);
+  const dw = imgW * s;
+  const dh = imgH * s;
+  return { x: (w - dw) * pos, y: (h - dh) * pos, w: dw, h: dh };
+}
+
 // Malt einen gefüllten Kreis (Pinsel) mit Radius r in ein RGBA-Bild. Ohne Kantenglättung,
 // damit nur echte Farben entstehen und das Bild sich gut komprimieren lässt.
 export function stampDisc(rgba, w, h, cx, cy, r, rgb) {
