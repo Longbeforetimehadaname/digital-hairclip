@@ -1,0 +1,14 @@
+{
+  "name": "digital-hairclip",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Steuerung für einen selbstgebauten digitalen Haarclip (ESP32-S3, Web Bluetooth)",
+  "scripts": {
+    "test": "node --test",
+    "serve": "python3 -m http.server 8080 -d web"
+  },
+  "devDependencies": {
+    "jsdom": "^26.0.0"
+  }
+}
