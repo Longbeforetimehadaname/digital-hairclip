@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#e9e8e4" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f4efe4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#161513" media="(prefers-color-scheme: dark)">
   <title>Hairclip</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -17,18 +17,29 @@
 </head>
 <body>
 <header class="bar">
-  <span class="mark">Hairclip</span>
-  <span class="link">
-    <span id="dot" class="led" aria-hidden="true"></span>
-    <span id="status">offline</span>
-    <button id="connect" class="key small" type="button">Verbinden</button>
-  </span>
+  <div class="bar-top">
+    <span class="kicker">Nº 01 — Fernbedienung</span>
+    <span class="link">
+      <span id="dot" class="led" aria-hidden="true"></span>
+      <span id="status">offline</span>
+      <button id="connect" class="key small" type="button">Verbinden</button>
+    </span>
+  </div>
+  <h1>Hairclip</h1>
+  <div class="mast-rule" aria-hidden="true"></div>
 </header>
 
 <main>
   <section class="device" aria-label="Vorschau">
-    <div class="screen-wrap">
-      <canvas id="screen" width="320" height="170" role="img" aria-label="Vorschau des Clip-Displays"></canvas>
+    <div class="screen-frame">
+      <div class="screen-offset" aria-hidden="true"></div>
+      <div class="screen-wrap">
+        <canvas id="screen" width="320" height="170" role="img" aria-label="Vorschau des Clip-Displays"></canvas>
+      </div>
+    </div>
+    <div class="caption">
+      <span>Live-Preview</span>
+      <span class="caption-size">320 × 170</span>
     </div>
     <div class="device-row">
       <label class="lbl" for="bright">Hell</label>
@@ -43,82 +54,123 @@
   </section>
 
   <nav class="modes" role="tablist" aria-label="Was soll der Clip zeigen?">
-    <button role="tab" id="tab-text" aria-controls="panel-text" aria-selected="true" type="button">Text</button>
-    <button role="tab" id="tab-draw" aria-controls="panel-draw" aria-selected="false" type="button" tabindex="-1">Zeichnen</button>
-    <button role="tab" id="tab-preset" aria-controls="panel-preset" aria-selected="false" type="button" tabindex="-1">Animation</button>
-    <button role="tab" id="tab-photo" aria-controls="panel-photo" aria-selected="false" type="button" tabindex="-1">Foto</button>
-    <button role="tab" id="tab-tarot" aria-controls="panel-tarot" aria-selected="false" type="button" tabindex="-1">Tarot</button>
-    <button role="tab" id="tab-clock" aria-controls="panel-clock" aria-selected="false" type="button" tabindex="-1">Uhr</button>
+    <button role="tab" id="tab-text" aria-controls="panel-text" aria-selected="true" type="button">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 6h14M12 6v13M9 19h6" stroke-linecap="round"/></svg>
+      <span>Text</span>
+    </button>
+    <button role="tab" id="tab-draw" aria-controls="panel-draw" aria-selected="false" type="button" tabindex="-1">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-5L15 5l4 4L9 19z"/><path d="M13 7l4 4"/></svg>
+      <span>Zeichnen</span>
+    </button>
+    <button role="tab" id="tab-preset" aria-controls="panel-preset" aria-selected="false" type="button" tabindex="-1">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M10 9.5v5l4.5-2.5z"/></svg>
+      <span>Animation</span>
+    </button>
+    <button role="tab" id="tab-photo" aria-controls="panel-photo" aria-selected="false" type="button" tabindex="-1">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="1.5"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4 4 3 3-2 5 4"/></svg>
+      <span>Foto</span>
+    </button>
+    <button role="tab" id="tab-tarot" aria-controls="panel-tarot" aria-selected="false" type="button" tabindex="-1">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="3" width="12" height="18" rx="1.5"/><path d="M12 8.5l1.1 2.3 2.4.3-1.8 1.6.5 2.4-2.2-1.2-2.2 1.2.5-2.4-1.8-1.6 2.4-.3z"/></svg>
+      <span>Tarot</span>
+    </button>
+    <button role="tab" id="tab-clock" aria-controls="panel-clock" aria-selected="false" type="button" tabindex="-1">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2" stroke-linecap="round"/></svg>
+      <span>Uhr</span>
+    </button>
   </nav>
 
   <section id="panel-text" class="panel" role="tabpanel" aria-labelledby="tab-text">
-    <label class="lbl" for="text-input">Nachricht</label>
-    <input id="text-input" type="text" maxlength="40" value="Type something..." autocomplete="off">
-    <div class="symbols" role="group" aria-label="Zeichen einfügen">
-      <button type="button" data-symbol="♥" aria-label="Herz einfügen">♥</button>
-      <button type="button" data-symbol="★" aria-label="Stern einfügen">★</button>
-      <button type="button" data-symbol="☾" aria-label="Mond einfügen">☾</button>
-      <button type="button" data-symbol="☀" aria-label="Sonne einfügen">☀</button>
-      <button type="button" data-symbol="✿" aria-label="Blume einfügen">✿</button>
-      <button type="button" data-symbol="♪" aria-label="Note einfügen">♪</button>
+    <div class="field">
+      <div class="field-head">
+        <label class="lbl" for="text-input">Nachricht</label>
+        <span class="count" id="text-count">17 / 40</span>
+      </div>
+      <input id="text-input" type="text" maxlength="40" value="Type something..." autocomplete="off">
     </div>
-    <div class="line">
-      <span class="lbl">Farbe</span>
+    <div class="symbols" role="group" aria-label="Zeichen einfügen">
+      <button type="button" data-symbol="♥" aria-label="Herz einfügen">♥&#xFE0E;</button>
+      <button type="button" data-symbol="★" aria-label="Stern einfügen">★&#xFE0E;</button>
+      <button type="button" data-symbol="☾" aria-label="Mond einfügen">☾&#xFE0E;</button>
+      <button type="button" data-symbol="☀" aria-label="Sonne einfügen">☀&#xFE0E;</button>
+      <button type="button" data-symbol="✿" aria-label="Blume einfügen">✿&#xFE0E;</button>
+      <button type="button" data-symbol="♪" aria-label="Note einfügen">♪&#xFE0E;</button>
+    </div>
+    <hr class="rule">
+    <div class="field">
+      <span class="lbl">Farbe · <span data-color-name>Pink</span></span>
       <div class="swatches" id="text-swatches" role="group" aria-label="Textfarbe"></div>
     </div>
-    <div class="line">
+    <div class="field">
       <label class="lbl" for="text-speed">Tempo</label>
       <input id="text-speed" type="range" min="1" max="10" value="4">
+      <div class="ends"><span>gemächlich</span><span>flott</span></div>
     </div>
     <button class="send" type="button" data-send="text">An den Clip senden</button>
   </section>
 
   <section id="panel-draw" class="panel" role="tabpanel" aria-labelledby="tab-draw" hidden>
-    <canvas id="editor" width="320" height="170" aria-label="Zeichenfläche, so gross wie das Display"></canvas>
+    <div class="field">
+      <div class="field-head">
+        <span class="lbl">Zeichenfläche</span>
+        <span class="count" id="frame-count">Bild 1 / 1</span>
+      </div>
+      <canvas id="editor" width="320" height="170" aria-label="Zeichenfläche, so gross wie das Display"></canvas>
+    </div>
     <div class="tools" role="group" aria-label="Werkzeug">
       <button id="tool-pen" class="key" type="button" aria-pressed="true">Stift</button>
       <button id="tool-fill" class="key" type="button" aria-pressed="false">Füllen</button>
       <button id="tool-eraser" class="key" type="button" aria-pressed="false">Radierer</button>
       <button id="undo" class="key" type="button" disabled>Zurück</button>
     </div>
-    <div class="line">
-      <span class="lbl">Farbe</span>
+    <hr class="rule">
+    <div class="field">
+      <span class="lbl">Farbe · <span data-color-name>Pink</span></span>
       <div class="swatches" id="draw-swatches" role="group" aria-label="Zeichenfarbe"></div>
     </div>
-    <div class="line">
+    <div class="field">
       <label class="lbl" for="brush">Pinsel</label>
       <input id="brush" type="range" min="1" max="12" value="4">
+      <div class="ends"><span>fein</span><span>dick</span></div>
     </div>
-    <div class="line top">
+    <hr class="rule">
+    <div class="field">
       <span class="lbl">Bilder</span>
-      <div class="frames-wrap">
-        <div id="frames" class="frames" role="group" aria-label="Bilder der Animation"></div>
-        <div class="tools">
-          <button id="frame-add" class="key small" type="button">+ Kopie</button>
-          <button id="frame-del" class="key small" type="button">Löschen</button>
-          <button id="frame-clear" class="key small" type="button">Leeren</button>
-          <button id="frame-play" class="key small" type="button">Abspielen</button>
-        </div>
+      <div id="frames" class="frames" role="group" aria-label="Bilder der Animation"></div>
+      <div class="tools">
+        <button id="frame-add" class="key small" type="button">+ Kopie</button>
+        <button id="frame-del" class="key small" type="button">Löschen</button>
+        <button id="frame-clear" class="key small" type="button">Leeren</button>
+        <button id="frame-play" class="key small" type="button">Abspielen</button>
       </div>
     </div>
-    <div class="line">
+    <div class="field">
       <label class="lbl" for="draw-fps">Tempo</label>
       <input id="draw-fps" type="range" min="1" max="15" value="5">
+      <div class="ends"><span>gemächlich</span><span>flott</span></div>
     </div>
     <button class="send" type="button" data-send="draw">An den Clip senden</button>
   </section>
 
   <section id="panel-preset" class="panel" role="tabpanel" aria-labelledby="tab-preset" hidden>
-    <div id="presets" class="list" role="group" aria-label="Animationen"></div>
+    <div class="field">
+      <span class="lbl">Animation wählen</span>
+      <div id="presets" class="list" role="group" aria-label="Animationen"></div>
+    </div>
     <button class="send" type="button" data-send="preset">An den Clip senden</button>
   </section>
 
   <section id="panel-photo" class="panel" role="tabpanel" aria-labelledby="tab-photo" hidden>
-    <label class="key file">
-      Foto wählen
-      <input id="photo-file" type="file" accept="image/*">
-    </label>
-    <div class="line">
+    <div class="field">
+      <span class="lbl">Foto</span>
+      <label class="key file">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+        <span id="photo-pick-label">Foto wählen</span>
+        <input id="photo-file" type="file" accept="image/*">
+      </label>
+      <p class="note" id="photo-note">Ein Bild aus der Galerie oder direkt mit der Kamera</p>
+    </div>
+    <div class="field">
       <label class="lbl" for="photo-pos">Ausschnitt</label>
       <input id="photo-pos" type="range" min="0" max="100" value="50" disabled>
     </div>
@@ -128,28 +180,32 @@
 
   <section id="panel-tarot" class="panel" role="tabpanel" aria-labelledby="tab-tarot" hidden>
     <div class="tools two">
-      <button id="tarot-one" class="key" type="button">Eine Karte</button>
-      <button id="tarot-three" class="key" type="button">Drei Karten</button>
+      <button id="tarot-one" class="key" type="button" aria-pressed="false">Eine Karte</button>
+      <button id="tarot-three" class="key" type="button" aria-pressed="false">Drei Karten</button>
     </div>
     <ol id="tarot-reading" class="reading" aria-live="polite"></ol>
     <p class="hint">Am Clip selbst: Knopf kurz drücken für eine Karte, lange drücken für drei. Ist der Clip verbunden, legt er die Karten gleich mit, und was am Clip gezogen wird, erscheint hier.</p>
+    <hr class="rule">
     <details class="history">
-      <summary>Frühere Legungen</summary>
+      <summary>
+        <span>Frühere Legungen</span>
+        <svg class="chevron" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </summary>
       <ol id="tarot-history"></ol>
       <button id="tarot-clear" class="key small" type="button">Verlauf löschen</button>
     </details>
   </section>
 
   <section id="panel-clock" class="panel" role="tabpanel" aria-labelledby="tab-clock" hidden>
-    <fieldset class="line">
+    <fieldset>
       <legend class="lbl">Anzeige</legend>
       <div class="tools two">
         <label class="key choice"><input type="radio" name="clock-style" value="0" checked> Nur Zeit</label>
         <label class="key choice"><input type="radio" name="clock-style" value="1"> Mit Datum</label>
       </div>
     </fieldset>
-    <div class="line">
-      <span class="lbl">Farbe</span>
+    <div class="field">
+      <span class="lbl">Farbe · <span data-color-name>Weiss</span></span>
       <div class="swatches" id="clock-swatches" role="group" aria-label="Farbe der Uhr"></div>
     </div>
     <p class="hint">Der Clip übernimmt die Uhrzeit vom Handy und zählt dann selbst weiter.</p>
@@ -158,6 +214,7 @@
 </main>
 
 <footer class="foot">
+  <div class="foot-rule" aria-hidden="true"></div>
   <p>Beim ersten Senden fragt der Browser nach dem Clip. Er muss eingeschaltet und in der Nähe sein.</p>
 </footer>
 <script type="module" src="app.js"></script>

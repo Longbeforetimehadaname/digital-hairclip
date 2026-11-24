@@ -47,14 +47,14 @@ Solange kein Clip da ist, endet der Weg bei Schritt 2: die Vorschau in `app.js`.
 | Du willst | Datei |
 |---|---|
 | Texte, Knöpfe, neuen Bereich | `web/index.html`. Ein Bereich ist ein `<section class="panel">` plus ein Tab-Knopf darüber. Die `id` des Tabs ist `tab-…`, die des Bereichs `panel-…`. |
-| Farben, Abstände, Schrift der Seite | `web/style.css`, oben die Variablen `--body`, `--accent` und so weiter. Hell und dunkel sind zwei Blöcke. Akzentfarbe ist das Pink der Senden-Taste. |
+| Farben, Abstände, Schrift der Seite | `web/style.css`, oben die Variablen `--paper`, `--accent` und so weiter. Hell und dunkel sind zwei Blöcke. Pink ist der Senden-Knopf und die Auswahl. |
 | Starttext im Nachrichtenfeld | `value="…"` am Feld `#text-input` in `index.html`. Beim Laden kopiert `app.js` diesen Text in die Vorschau (`state.text.value = textInput.value`). Den alten Eintrag `'Hallo Schatz'` im `state`-Objekt kannst du stehen lassen, er wird sofort überschrieben. |
 | Farbfelder (Pink, Rosa, Gelb, …) | Liste `COLORS` ganz oben in `web/app.js`. Gilt für Text, Zeichnen und Uhr. |
 | Schrift und Grösse des Lauftexts | `FONT` in `app.js` (jetzt Nunito, 80px, fett). Höhe des Streifens ist `TEXT_H` in `protocol.js` (112). Die muss zur Firmware passen, also nicht allein ändern. |
 | Tempo des Lauftexts | Schieber in `index.html` (`#text-speed`, 1–10). Der Clip rechnet `Geschwindigkeit × 30` Pixel pro Sekunde. Dieselbe Formel steht in `paintText` in `app.js` und in der Firmware. |
 | Pinsel, maximale Bilder beim Zeichnen | `MAX_DRAW_FRAMES` und der Schieber `#brush` / `#draw-fps` in `index.html`. Die Zeichenlogik (Stift, Füllen, Radierer) ist in `app.js` unter „Zeichnen“, die Pixel-Rechnungen in `web/pixels.js`. |
 
-Die Seite soll wie eine Fernbedienung aussehen: hellgrau, schwarze Tasten, ein Pink, keine Verläufe, kaum Rundungen. Schrift der Seite: Archivo und IBM Plex Mono, geladen von Google Fonts in `index.html`. Ohne Internet fällt der Browser auf eine Ersatzschrift zurück.
+Die Seite soll wie ein gedrucktes Heft auf einer Fernbedienung aussehen: cremefarbenes Papier, breiter Schriftzug, Beschriftungen in IBM Plex Mono, Tasten umrandet. Pink nur für Senden und Auswahl. Keine Verläufe, keine Schatten. Schrift der Seite: Archivo und IBM Plex Mono, geladen von Google Fonts in `index.html`. Ohne Internet fällt der Browser auf eine Ersatzschrift zurück.
 
 ### Bild auf dem Clip (Vorschau und später das echte Display)
 

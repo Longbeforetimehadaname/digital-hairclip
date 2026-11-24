@@ -129,7 +129,15 @@ function paint(t) {
     }
     case 'photo':
       if (state.photo.rgba) paintFrame(state.photo.rgba);
-      else { sctx.fillStyle = '#000'; sctx.fillRect(0, 0, W, H); }
+      else {
+        sctx.fillStyle = '#000';
+        sctx.fillRect(0, 0, W, H);
+        sctx.fillStyle = 'rgba(255,255,255,0.4)';
+        sctx.font = '500 15px "IBM Plex Mono", ui-monospace, monospace';
+        sctx.textAlign = 'center';
+        sctx.textBaseline = 'middle';
+        sctx.fillText('Noch kein Foto', W / 2, H / 2);
+      }
       break;
     case 'tarot':
       paintTarot(t * 1000);
@@ -157,9 +165,16 @@ function loop(ms) {
 /* ---------- Farbfelder (mit eigener Farbe am Schluss) ---------- */
 
 function swatches(box, get, set) {
+  const nameEl = box.parentElement.querySelector('[data-color-name]');
+  const colorName = (hex) => {
+    const hit = COLORS.find(([h]) => h.toLowerCase() === String(hex).toLowerCase());
+    return hit ? hit[1] : 'Eigene';
+  };
   const sync = () => {
-    $$('button', box).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.color === get())));
-    custom.value = get();
+    const current = get();
+    $$('button', box).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.color === current)));
+    custom.value = current;
+    if (nameEl) nameEl.textContent = colorName(current);
   };
   COLORS.forEach(([hex, name]) => {
     const b = document.createElement('button');
@@ -208,7 +223,15 @@ function refreshText() {
 }
 
 const textInput = $('#text-input');
-textInput.addEventListener('input', () => { state.text.value = textInput.value; refreshText(); });
+function updateTextCount() {
+  const el = $('#text-count');
+  if (el) el.textContent = `${textInput.value.length} / ${textInput.maxLength}`;
+}
+textInput.addEventListener('input', () => {
+  state.text.value = textInput.value;
+  updateTextCount();
+  refreshText();
+});
 $('#text-speed').addEventListener('input', (e) => { state.text.speed = Number(e.target.value); });
 swatches($('#text-swatches'), () => state.text.color, (c) => { state.text.color = c; rebuildTextCanvas(); });
 $$('[data-symbol]').forEach((b) => b.addEventListener('click', () => {
@@ -221,6 +244,7 @@ $$('[data-symbol]').forEach((b) => b.addEventListener('click', () => {
   textInput.setSelectionRange(a + s.length, a + s.length);
   textInput.focus();
   state.text.value = textInput.value;
+  updateTextCount();
   refreshText();
 }));
 
@@ -267,6 +291,8 @@ function syncDraw() {
   $('#frame-add').disabled = d.frames.length >= MAX_DRAW_FRAMES;
   $('#frame-del').disabled = d.frames.length < 2;
   $('#undo').disabled = d.undo.length === 0;
+  const frameCount = $('#frame-count');
+  if (frameCount) frameCount.textContent = `Bild ${d.cur + 1} / ${d.frames.length}`;
   for (const tool of ['pen', 'fill', 'eraser']) $(`#tool-${tool}`).setAttribute('aria-pressed', String(d.tool === tool));
 }
 
@@ -408,6 +434,10 @@ const photoPos = $('#photo-pos');
 $('#photo-file').addEventListener('change', async (e) => {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
+  const note = $('#photo-note');
+  const pick = $('#photo-pick-label');
+  if (note) note.textContent = file.name;
+  if (pick) pick.textContent = 'Anderes Foto wählen';
   const url = URL.createObjectURL(file);
   try {
     const img = new Image();
@@ -466,7 +496,7 @@ function renderHistory() {
       textContent: `${when.toLocaleDateString('de-CH')} ${when.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}`,
     });
     const names = reading(entry.cards).map((r) => (r.reversed ? `${r.name} (umgekehrt)` : r.name)).join(', ');
-    li.append(time, document.createTextNode(` – ${names}`));
+    li.append(time, Object.assign(document.createElement('span'), { className: 'hist-cards', textContent: names }));
     box.append(li);
   }
   $('#tarot-clear').hidden = !box.children.length;
@@ -474,6 +504,8 @@ function renderHistory() {
 
 function showTarot(cards, from) {
   state.tarot = { cards, start: clockMs };
+  $('#tarot-one').setAttribute('aria-pressed', String(cards.length === 1));
+  $('#tarot-three').setAttribute('aria-pressed', String(cards.length === 3));
   sceneKey = '';
   renderReading();
   store.save([{ t: new Date().toISOString(), cards, from }, ...store.load()]);
@@ -637,6 +669,7 @@ syncDraw();
 updateStatus();
 renderHistory();
 state.text.value = textInput.value;
+updateTextCount();
 refreshText();
 if (document.fonts && document.fonts.load) {
   document.fonts.load(FONT, 'Hallo ÄÖÜ').then(refreshText).catch(() => {});
