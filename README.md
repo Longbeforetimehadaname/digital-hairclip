@@ -33,6 +33,7 @@ Prüft das Bluetooth-Protokoll, die Animationen und die Verdrahtung der Oberflä
 |---|---|
 | `web/` | Steuerungsseite (HTML, CSS, JavaScript ohne Build-Schritt) |
 | `docs/PROTOCOL.md` | Bluetooth-Protokoll zwischen Webseite und Clip |
+| `docs/WEITERBAUEN.md` | Wo du selbst was änderst, wenn du ohne Hilfe weiterbaust |
 | `docs/ANLEITUNG_CLAUDE_CODE.md` | Phasenplan und Arbeitsregeln für Claude Code |
 | `firmware/` | Firmware für den ESP32 (noch zu schreiben) |
 | `hardware/` | Teileliste, Prüfpunkte, später Gehäuse (OpenSCAD) |
