@@ -12,7 +12,7 @@ export const TX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // Clip meldet si
 export const DEVICE_NAME_PREFIX = 'Hairclip';
 
 export const MAGIC = 0xa5;
-export const TYPE = { FRAME: 1, TEXT: 2, PHOTO: 3, BRIGHTNESS: 4, OFF: 5, TAROT: 6, CLOCK: 7 };
+export const TYPE = { FRAME: 1, TEXT: 2, PHOTO: 3, BRIGHTNESS: 4, OFF: 5, TAROT: 6, CLOCK: 7, DVD: 8 };
 export const TAROT_CARDS = 78;
 export const MAX_PAYLOAD = 40000; // grösste erlaubte Nutzdaten pro Paket (Puffer in der Firmware)
 export const MAX_ANIM_FRAMES = 16;
@@ -164,6 +164,11 @@ export function parseTarot(payload) {
 
 // Uhr: aktuelle Ortszeit als Sekunden seit 1.1.1970 (u32), danach Stil (u8: 0 = gross, 1 = mit Datum),
 // Farbe r, g, b. Der Clip zählt selbst weiter.
+// DVD-Logo: keine Bilder. Der Clip rechnet selbst weiter und würfelt neue Richtungen.
+export function dvdPacket() {
+  return packet(TYPE.DVD);
+}
+
 export function clockPacket(date, rgb, style = 0) {
   const local = Math.floor(date.getTime() / 1000) - date.getTimezoneOffset() * 60;
   const p = new Uint8Array(8);

@@ -1,0 +1,22 @@
+// Die Figur, 14×32 Pixel. 0 ist leer, sonst eine Farbe aus der Liste.
+// Erzeugt mit tools/build-zatanna.mjs.
+export const ZATANNA_W = 14;
+export const ZATANNA_H = 32;
+export const ZATANNA_PALETTE = [
+  [0, 0, 0],
+  [21, 21, 21],
+  [22, 35, 95],
+  [32, 57, 112],
+  [39, 39, 39],
+  [191, 123, 89],
+  [217, 149, 111],
+  [189, 189, 189],
+  [255, 255, 255],
+  [52, 81, 144],
+  [108, 17, 19],
+  [166, 37, 40],
+  [233, 163, 12],
+  [193, 119, 19],
+  [161, 104, 76],
+];
+export const ZATANNA_BITS = 'ABERERERAAAREREREQAAEiIiEREAABIiERERAAARIhEREQAAEzREQzEAERERFDMREQEiIhERERASVVUiJiIQFVJSZmdiEBIWV4F3EQABF2ead6EAASEWd3dxABIiEWd2EhASIREZESIQEhJRvMsSEAElUbuLEQABVRIZkSEQElESGYERIRVYEd3eESEBmZHt3hkQABge7i4YEAARIiIiEQAAAfIhEhAAAAFvEW8QAAAW9hH2EAAAH2EBbxAAABIhASEQAAEiEAEiEAABEhABIREAEiIQASIiEBEREAERERA=';

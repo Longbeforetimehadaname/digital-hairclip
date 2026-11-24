@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  packet, animPackets, textPacket, photoPackets, brightnessPacket, offPacket, rle565, unrle565, rgb565,
+  packet, animPackets, textPacket, photoPackets, brightnessPacket, offPacket, dvdPacket, rle565, unrle565, rgb565,
   chunks, concat, MAGIC, TYPE, W, H, FRAME_BYTES, MAX_ANIM_FRAMES, MAX_PAYLOAD, PHOTO_ROWS, CHUNK,
 } from '../web/protocol.js';
 
@@ -101,6 +101,10 @@ test('photoPackets: ganzes Bild in Zeilen-Paketen', () => {
 test('brightness und off', () => {
   assert.deepEqual([...brightnessPacket(999)], [MAGIC, TYPE.BRIGHTNESS, 1, 0, 255]);
   assert.deepEqual([...offPacket()], [MAGIC, TYPE.OFF, 0, 0]);
+});
+
+test('dvd: leeres Paket, der Clip rechnet selbst', () => {
+  assert.deepEqual([...dvdPacket()], [MAGIC, TYPE.DVD, 0, 0]);
 });
 
 test('concat und chunks: zerlegen ohne Verlust', () => {

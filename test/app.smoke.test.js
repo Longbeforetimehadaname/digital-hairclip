@@ -62,7 +62,7 @@ const state = () => window.__hairclip.state;
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 test('Start: Animationen, Farbfelder, Text-Streifen, Status', () => {
-  assert.equal(window.document.querySelectorAll('#presets button').length, 4);
+  assert.equal(window.document.querySelectorAll('#presets button').length, 10);
   assert.equal(window.document.querySelectorAll('#text-swatches button').length, 8);
   assert.equal(window.document.querySelectorAll('[role="tab"]').length, 6);
   assert.ok(state().text.w > 0);

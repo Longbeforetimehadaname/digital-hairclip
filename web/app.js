@@ -1,8 +1,8 @@
 import {
   W, H, TEXT_H, TYPE,
-  animPackets, textPacket, photoPackets, brightnessPacket, offPacket, tarotPacket, clockPacket, parseTarot, concat,
+  animPackets, textPacket, photoPackets, brightnessPacket, offPacket, tarotPacket, clockPacket, dvdPacket, parseTarot, concat,
 } from './protocol.js';
-import { PRESETS, blank } from './presets.js';
+import { PRESETS, blank, createDvd } from './presets.js';
 import { HairclipLink } from './ble.js';
 import { textStrip, stripBit, cellsOnLine, stampDisc, floodFill, coverRect } from './pixels.js';
 import { drawCards, reading } from './tarot.js';
@@ -122,11 +122,10 @@ function paint(t) {
       paintFrame(d.frames[i]);
       break;
     }
-    case 'preset': {
-      const p = state.preset;
-      paintFrame(p.frames[Math.floor(t * p.fps) % p.frames.length]);
+    case 'preset':
+      if (state.preset.live) paintDvd(t);
+      else paintFrame(state.preset.frames[Math.floor(t * state.preset.fps) % state.preset.frames.length]);
       break;
-    }
     case 'photo':
       if (state.photo.rgba) paintFrame(state.photo.rgba);
       else {
@@ -156,6 +155,25 @@ function paint(t) {
 }
 
 let clockMs = 0;
+
+// DVD wird nicht als Film abgespielt, sondern bei jedem Schritt neu gerechnet.
+const dvdBuf = blank();
+let dvdSim = null;
+let dvdStamp = 0;
+
+function beginDvd() {
+  dvdSim = createDvd();
+  dvdStamp = 0;
+}
+
+function paintDvd(t) {
+  if (!dvdSim) beginDvd();
+  if (dvdStamp) dvdSim.step(Math.min(0.05, t - dvdStamp));
+  dvdStamp = t;
+  dvdSim.render(dvdBuf);
+  paintFrame(dvdBuf);
+}
+
 function loop(ms) {
   clockMs = ms;
   paint(ms / 1000);
@@ -403,10 +421,15 @@ function renderPresets() {
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = p.name;
-    b.dataset.info = `${p.fps} Bilder/s`;
+    b.dataset.info = p.info || `${p.fps} Bilder/s`;
     b.setAttribute('aria-pressed', String(p.id === state.preset.id));
     b.addEventListener('click', () => {
-      state.preset = { id: p.id, frames: p.make(), fps: p.fps };
+      if (p.live) {
+        state.preset = { id: p.id, live: true };
+        beginDvd();
+      } else {
+        state.preset = { id: p.id, frames: p.make(), fps: p.fps };
+      }
       renderPresets();
     });
     box.append(b);
@@ -602,7 +625,7 @@ const senders = {
     return textPacket(state.text.bits, state.text.w, TEXT_H, hexToRgb(state.text.color), state.text.speed);
   },
   draw: () => concat(animPackets(state.draw.frames, state.draw.frames.length > 1 ? state.draw.fps : 1)),
-  preset: () => concat(animPackets(state.preset.frames, state.preset.fps)),
+  preset: () => (state.preset.live ? dvdPacket() : concat(animPackets(state.preset.frames, state.preset.fps))),
   photo: () => {
     if (!state.photo.rgba) throw new RangeError('Wähle zuerst ein Foto aus.');
     return concat(photoPackets(state.photo.rgba));

@@ -41,8 +41,13 @@ Die Webseite schreibt in Stücken zu **180 Bytes**. Ein Paket kommt also in mehr
 | 0x05 | OFF | keine |
 | 0x06 | TAROT | `count` (u8, 1 oder 3), danach `count ×` [`id` (u8, 0–77), `reversed` (u8, 0/1)] |
 | 0x07 | CLOCK | `time` (u32, Ortszeit in Sekunden seit 1.1.1970), `style` (u8, 0 = nur Zeit, 1 = mit Datum), `r`, `g`, `b` |
+| 0x08 | DVD | keine |
 
 Unbekannte Typen ignoriert der Clip.
+
+### DVD
+
+Ein leeres Paket. Der Clip zeichnet das Logo selbst und lässt es geradeaus fliegen. Am Rand prallt es ab wie ein Ball: nur die getroffene Richtung dreht sich um, die andere bleibt. Die Farbe wechselt beim Aufprall. Startort und Startrichtung werden einmal gewürfelt. Die Vorschau macht dasselbe, mit eigenem Zufall.
 
 ### FRAME (Animationen, Zeichnungen, Standbilder)
 

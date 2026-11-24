@@ -7,6 +7,7 @@
 //    Schütteln = eine Karte (nur mit Erschütterungsschalter, siehe config.h)
 //  - Gezogene Karten an die Webseite melden, damit sie dort die Deutung zeigt
 #include <Arduino.h>
+#include <math.h>
 #include <BLE2902.h>
 #include <BLEDevice.h>
 #include <BLEServer.h>
@@ -27,7 +28,7 @@ static const char *RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
 static const char *TX_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
 
 constexpr uint8_t MAGIC = 0xA5;
-enum : uint8_t { T_FRAME = 1, T_TEXT = 2, T_PHOTO = 3, T_BRIGHTNESS = 4, T_OFF = 5, T_TAROT = 6, T_CLOCK = 7 };
+enum : uint8_t { T_FRAME = 1, T_TEXT = 2, T_PHOTO = 3, T_BRIGHTNESS = 4, T_OFF = 5, T_TAROT = 6, T_CLOCK = 7, T_DVD = 8 };
 constexpr size_t MAX_PAYLOAD = 40000;
 constexpr size_t MAX_ANIM_BYTES = 64000;
 constexpr int MAX_ANIM_FRAMES = 16;
@@ -53,11 +54,24 @@ static TarotCard tarotCards[3];
 static int tarotCount = 0, tarotShown = -1;
 static uint32_t tarotStart = 0;
 
+// DVD-Logo, gleiche Regeln wie createDvd() in web/presets.js. Der Clip würfelt selbst (esp_random).
+static const uint8_t DVD_GLYPH[][7] = {
+    {0b11110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b11110},  // D
+    {0b10001, 0b10001, 0b10001, 0b01010, 0b01010, 0b00100, 0b00100},  // V
+    {0b11111, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b11111},  // I
+    {0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b11111},  // E
+    {0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110},  // O
+};
+static const int DVD_W = 80, DVD_H = 42;
+static float dvdX = 0, dvdY = 0, dvdVx = 40, dvdVy = 30;
+static int dvdColorI = 0;
+static uint32_t dvdNext = 0, dvdLast = 0;
+
 static uint32_t clockBase = 0, clockMillis = 0;
 static int clockStyle = 0, clockLastSecond = -1;
 static uint16_t clockColor = 0xFFFF;
 
-enum Mode { M_SPLASH, M_WAIT, M_ANIM, M_TEXT, M_STATIC, M_TAROT, M_CLOCK, M_OFF };
+enum Mode { M_SPLASH, M_WAIT, M_ANIM, M_TEXT, M_STATIC, M_TAROT, M_CLOCK, M_DVD, M_OFF };
 static Mode mode = M_SPLASH;
 static uint8_t brightness = 200;
 static uint32_t lastActivity = 0;
@@ -174,6 +188,76 @@ static void updateTarot() {
   else render::tarot(tarotCards, tarotCount, show);
 }
 
+// ---------- DVD: prallt wie ein Bildschirmschoner ab, nur die Farbe wechselt ----------
+static const uint8_t DVD_COLS[][3] = {{255, 40, 40}, {40, 90, 255}, {40, 210, 70}, {255, 220, 40}};
+
+static void dvdStamp(uint8_t *buf, int glyph, int x, int y, int scale, uint16_t color) {
+  const uint8_t hi = color >> 8, lo = color & 0xFF;
+  for (int row = 0; row < 7; row++) {
+    for (int col = 0; col < 5; col++) {
+      if ((DVD_GLYPH[glyph][row] & (0x10 >> col)) == 0) continue;
+      for (int yy = 0; yy < scale; yy++) {
+        uint8_t *p = buf + ((y + row * scale + yy) * DVD_W + (x + col * scale)) * 2;
+        for (int xx = 0; xx < scale; xx++) {
+          p[0] = hi;
+          p[1] = lo;
+          p += 2;
+        }
+      }
+    }
+  }
+}
+
+static void dvdDraw() {
+  static uint8_t buf[DVD_W * DVD_H * 2];
+  const uint16_t dvdColor = tft::rgb(DVD_COLS[dvdColorI][0], DVD_COLS[dvdColorI][1], DVD_COLS[dvdColorI][2]);
+  memset(buf, 0, sizeof buf);
+  dvdStamp(buf, 0, 0, 0, 4, dvdColor);
+  dvdStamp(buf, 1, 30, 0, 4, dvdColor);
+  dvdStamp(buf, 2, 60, 0, 4, dvdColor);
+  const int vidX = 11;  // VIDEO ist schmaler und sitzt in der Mitte
+  const int letters[] = {1, 3, 0, 2, 4};  // V E D I O
+  for (int i = 0; i < 5; i++) dvdStamp(buf, letters[i], vidX + i * 12, 28, 2, dvdColor);
+  tft::fillScreen(0);
+  tft::window((int)(dvdX + 0.5f), (int)(dvdY + 0.5f), DVD_W, DVD_H);
+  tft::pixels(buf, sizeof buf);
+  tft::end();
+}
+
+static void dvdStart() {
+  wake();
+  const float spanX = tft::W - DVD_W, spanY = tft::H - DVD_H;
+  const float speed = 80.0f + (esp_random() % 50);
+  const float ang = (esp_random() % 6283) / 1000.0f;
+  dvdX = (esp_random() % 1000) / 1000.0f * spanX;
+  dvdY = (esp_random() % 1000) / 1000.0f * spanY;
+  dvdVx = cosf(ang) * speed;
+  dvdVy = sinf(ang) * speed;
+  if (fabsf(dvdVx) < 28) dvdVx = copysignf(28, dvdVx == 0 ? 1 : dvdVx);
+  if (fabsf(dvdVy) < 22) dvdVy = copysignf(22, dvdVy == 0 ? 1 : dvdVy);
+  dvdColorI = esp_random() % 4;
+  dvdLast = 0;
+  dvdNext = 0;
+  mode = M_DVD;
+}
+
+static void dvdStep(float dt) {
+  const float spanX = tft::W - DVD_W, spanY = tft::H - DVD_H;
+  float nx = dvdX + dvdVx * dt;
+  float ny = dvdY + dvdVy * dt;
+  bool hit = false;
+  if (nx < 0) { nx = 0; dvdVx = fabsf(dvdVx); hit = true; }
+  else if (nx > spanX) { nx = spanX; dvdVx = -fabsf(dvdVx); hit = true; }
+  if (ny < 0) { ny = 0; dvdVy = fabsf(dvdVy); hit = true; }
+  else if (ny > spanY) { ny = spanY; dvdVy = -fabsf(dvdVy); hit = true; }
+  dvdX = nx;
+  dvdY = ny;
+  if (!hit) return;
+  int i = esp_random() % 3;
+  if (i >= dvdColorI) i += 1;
+  dvdColorI = i;
+}
+
 // ---------- Pakete verarbeiten ----------
 static bool runsCoverScreen(const uint8_t *runs, size_t len) {
   if (len % 3) return false;
@@ -268,6 +352,10 @@ static void handlePacket(uint8_t type, const uint8_t *p, size_t len) {
       startTarot(n, false);
       break;
     }
+    case T_DVD:
+      if (len != 0) return;
+      dvdStart();
+      break;
     case T_CLOCK: {
       if (len < 8) return;
       wake();
@@ -400,6 +488,16 @@ void loop() {
     }
     case M_TAROT:
       updateTarot();
+      break;
+    case M_DVD:
+      if ((int32_t)(now - dvdNext) >= 0) {
+        float dt = dvdLast ? (now - dvdLast) / 1000.0f : 0.033f;
+        if (dt > 0.05f) dt = 0.05f;
+        dvdLast = now;
+        dvdStep(dt);
+        dvdDraw();
+        dvdNext = now + 33;
+      }
       break;
     case M_CLOCK: {
       const time_t t = (time_t)clockBase + (now - clockMillis) / 1000;
