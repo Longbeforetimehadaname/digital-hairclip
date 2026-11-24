@@ -25,6 +25,7 @@ Stand: 23.11.2026. Der Benutzer hat sich für eine **grössere Bauweise** entsch
 - **Haarspange / Barrette**, flach, zum Aufkleben des Gehäuses. Grösse erst wählen, wenn das Gehäuse feststeht.
 - **USB-Datenkabel** passend zum Board (Micro-USB oder USB-C), nicht nur ein Ladekabel.
 - Starkes doppelseitiges Klebeband oder Epoxid.
+- Optional für „Schütteln zieht eine Tarot-Karte“: ein **Erschütterungsschalter** (z. B. Federschalter SW-18010P oder Kugelschalter SW-520D), zwei Drähte an einen freien Pin und GND. Ohne ihn geht Tarot trotzdem über den Knopf `BOOT`. Details in `firmware/README.md`.
 - Optional: kleiner Schiebeschalter zum Ausschalten, JST-PH-2.0-Buchse oder -Kabel für das Lademodul (der Akku hat einen Stecker, das Modul hat meist nur Lötpunkte B+ und B−).
 
 ## Grobe Verkabelung (am echten Teil bestätigen!)

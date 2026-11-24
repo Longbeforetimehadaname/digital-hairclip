@@ -13,7 +13,7 @@ Diese Anleitung führt dich Phase für Phase durch das Projekt. Lies zuerst `CLA
 ## Phase 0: Einstieg (ca. 10 Minuten)
 
 1. `CLAUDE.md`, `PLAN.md`, `docs/PROTOCOL.md`, `hardware/PARTS.md` lesen.
-2. `npm install` und `npm test`. Erwartet: 21 Tests grün.
+2. `npm install` und `npm test`. Erwartet: alle Tests grün.
 3. Dem Benutzer in 5 Sätzen sagen, was du verstanden hast und was als Nächstes ansteht.
 
 **Fertig, wenn:** Tests grün und der Benutzer das Verständnis bestätigt hat.
@@ -49,15 +49,15 @@ Frag den Benutzer zuerst, ob das Board und der Akku angekommen sind. **Ohne Hard
 
 ### 2b. Aufgaben
 
-1. Projekt aufsetzen (Arduino IDE oder PlatformIO, Board „ESP32 Dev Module“). Display: ST7789, 170 × 320. Pin-Beschriftung von Board und Display **am echten Teil ablesen**, nicht raten. Verkabelung mit dem Benutzer Schritt für Schritt durchgehen.
-2. Display-Beispiel zum Laufen bringen. Dem Benutzer sagen, was er sehen sollte.
-3. BLE-Peripheral: Gerätename `Hairclip`, Nordic UART Service, Schreib-Characteristic (UUIDs in `docs/PROTOCOL.md`).
-4. Test ohne Webseite: mit der App nRF Connect das Paket `A5 04 01 00 64` (Helligkeit 100) senden. Das Display muss reagieren.
-5. Paket-Parser: Puffer, Neusynchronisierung auf `0xA5`, 2-Sekunden-Timeout, Längenlimit 40 000 Bytes.
-6. Darstellung mit echten Pixeln im Querformat 320 × 170 (Protokoll Version 2): Animationen als Lauflängen-Bilder, Text-Scrolling, Foto, Helligkeit, Aus. Details in `docs/PROTOCOL.md`.
-7. Strom sparen: ohne Verbindung nach einigen Minuten die Hintergrundbeleuchtung dimmen oder ausschalten. Akkuspannung messen geht nur mit einem zusätzlichen Spannungsteiler (optional). Ziel: ein ganzer Abend Laufzeit.
+Die Firmware ist schon geschrieben und übersetzt (`firmware/hairclip/`, Anleitung in `firmware/README.md`), aber nie auf Hardware gelaufen. Darum jetzt:
 
-**Fertig, wenn:** alle fünf Befehle per nRF Connect funktionieren. Ablage in `firmware/`, Doku aktualisiert.
+1. Verkabelung mit dem Benutzer Schritt für Schritt durchgehen (Tabelle in `firmware/README.md`). Pin-Beschriftung am echten Display ablesen lassen.
+2. Aufspielen (Board „ESP32 Dev Module“, Partition „Huge APP“). Erwartet: Startbild „Hairclip“.
+3. Display-Einstellungen in `config.h` anpassen, bis das Bild stimmt (Versatz, Drehung, Farben).
+4. Knopf BOOT kurz und lang drücken: Mischen, dann eine bzw. drei Tarot-Karten.
+5. Mit nRF Connect testen (Pakete in `firmware/README.md`), dann mit der Webseite.
+6. Laufzeit mit Akku messen, bei Bedarf `AUTO_OFF_MINUTES` setzen.
+**Fertig, wenn:** alle sieben Befehle und der Knopf funktionieren. Ablage in `firmware/`, Doku aktualisiert.
 
 ## Phase 3: Verbindung Webseite ↔ Clip
 

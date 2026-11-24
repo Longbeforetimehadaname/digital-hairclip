@@ -24,8 +24,11 @@ Verworfen: DIY-Matrix aus LED-Streifen (ca. 8 × 4 cm, viel Löten, zu gross). F
 1. Scrolling-Text mit Farbe und Tempo
 2. Selbst zeichnen mit Pinsel (Grösse einstellbar), bis 8 Bilder als Animation
 3. Fertige Animationen: Herz, Funkeln, Regenbogen, Regen
-4. Foto auf dem ganzen Bildschirm
+4. Foto auf dem ganzen Bildschirm, Ausschnitt verschiebbar
 5. Helligkeit und Display aus
+6. **Tarot** (Wunsch vom 24.11.2026, höchste Priorität): am Clip per Knopf (kurz eine, lang drei Karten) oder Schütteln (mit Zusatzschalter), auch ohne Handy. Auf der Webseite mit Deutung und Verlauf.
+7. Uhr: Zeit vom Handy, der Clip zählt selbst weiter
+8. Zeichnen mit Füllen und Zurück, Zeichen wie ♥ ★ im Text, Seite lässt sich als App auf den Startbildschirm legen
 
 ## Aufbau
 

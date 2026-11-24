@@ -8,17 +8,20 @@ Digitaler Haarclip als Weihnachtsgeschenk (24.12.2026). Hardware (grössere Bauw
 
 ## Stand
 
-- Fertig und getestet (`npm test`, 29 Tests): Protokoll (`web/protocol.js`), Animationen (`web/presets.js`), Pixel-Hilfen (`web/pixels.js`: Textstreifen, Linien, Pinsel), Oberfläche (`web/app.js`, `web/index.html`, `web/style.css`), Bluetooth-Hülle (`web/ble.js`).
+- Fertig und getestet (`npm test`): Protokoll (`web/protocol.js`), Tarot-Deck (`web/tarot.js`, 78 Karten, deutsch), Clip-Bildschirme (`web/scene.js`: Tarot, Mischen, Uhr), Animationen, Pixel-Hilfen, Oberfläche, Bluetooth mit Meldungen vom Clip (`web/ble.js`).
+- Firmware `firmware/hairclip/` (24.11.2026): Arduino-Sketch ohne Zusatzbibliotheken (eigener ST7789-Treiber, BLE aus dem ESP32-Paket). Tarot am Clip per Knopf BOOT (kurz 1, lang 3 Karten), optional Schütteln mit Erschütterungsschalter. Übersetzt mit arduino-cli aus der installierten Arduino IDE (`%LOCALAPPDATA%\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe`, ESP32-Paket 3.3.10, Partition `huge_app`). **Nie auf echter Hardware gelaufen.**
+- `web/scene.js` und `firmware/hairclip/render.cpp` zeichnen nach denselben Regeln: Änderungen immer an beiden Stellen. Karten-Texte und Clip-Schriften kommen aus `web/tarot.js` und `tools/fonts.json` und werden mit `node tools/gen-firmware-data.mjs` in die Firmware übernommen (ein Test prüft das).
+- Design der Webseite (24.11.2026): bewusst wie die Fernbedienung eines Geräts, nicht wie eine KI-Landingpage: hellgrau, schwarze Tasten, ein Akzent (Pink), Schrift Archivo + IBM Plex Mono, keine Verläufe, keine Karten-Kästen, kaum Rundungen. Daran festhalten.
 - Repo: `Longbeforetimehadaname/digital-hairclip`, **seit 23.11.2026 privat** (Entscheid des Benutzers, wegen der Überraschung). Darum ist GitHub Pages aus und die Seite offline; der Workflow testet nur noch und überspringt das Veröffentlichen. Zum Testen die Seite lokal starten. Kurz vor Weihnachten stellt der Benutzer das Repo wieder öffentlich, dann ist die Seite unter https://longbeforetimehadaname.github.io/digital-hairclip/ erreichbar (eventuell unter Settings → Pages wieder „GitHub Actions“ wählen). Commits mit der noreply-Adresse dieses Kontos (lokal im Repo eingestellt).
 - Am 23.11.2026 in Chromium geprüft (375 px, hell/dunkel): Schrift scharf und mittig, Umlaute ok, Zeichnen mit Maus und Touch, Animationen, Foto. **Nicht** mit echter Hardware und **nicht** auf einem echten Handy getestet. Die Pixelschrift kommt von Google Fonts, ohne Internet fällt der Text auf eine Ersatzschrift zurück.
-- Offen: Firmware (`firmware/`), Gehäuse (`hardware/`), echte Verbindung Webseite ↔ Clip.
+- Offen: Firmware auf echter Hardware testen, Gehäuse (`hardware/`), echte Verbindung Webseite ↔ Clip.
 - Darstellung (Entscheid des Benutzers): **echte Pixel**, Display im Querformat 320 × 170. Protokoll Version 2 (`docs/PROTOCOL.md`): Animationen als Lauflängen-Bilder (RGB565), Text als 1-Bit-Streifen (Höhe 112, Schrift Nunito fett), Foto in Zeilenblöcken. Webseite und Tests sind umgestellt und am 23.11.2026 in Chromium (375 px) geprüft. Die Übertragungsgeschwindigkeit (180-Byte-Stücke mit Antwort) ist noch nicht mit echter Hardware gemessen.
 - Teile bestellt am 23.11.2026, noch nicht geliefert (Lademodul laut AliExpress ca. 30.11.–5.12.).
 
 ## Nächste Schritte
 
-1. Seite lokal starten (`npm run serve`) und im Browser durchklicken: Text, Zeichnen, Animationen, Foto. Fehler beheben.
-2. Wenn die Teile da sind: Firmware nach `firmware/README.md` schreiben. Zuerst ein einfaches ST7789-Beispiel (z. B. Bibliothek TFT_eSPI oder Adafruit ST7789) mit der echten Pin-Beschriftung zum Laufen bringen, dann BLE.
+1. Seite lokal starten (`npm run serve`) und im Browser durchklicken.
+2. Wenn die Teile da sind: Sicherheits-Checks, dann Firmware nach `firmware/README.md` aufspielen und Display-Einstellungen in `config.h` anpassen.
 3. Verbindung testen: Android mit Chrome, iPhone mit der App Bluefy.
 4. Gehäuse in OpenSCAD (parametrisch) nach den echten Massen, dann drucken lassen.
 

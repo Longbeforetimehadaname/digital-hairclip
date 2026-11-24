@@ -34,11 +34,13 @@ constexpr int MAX_ANIM_FRAMES = 16;
 constexpr uint32_t PIXELS = (uint32_t)tft::W * tft::H;
 
 // ---------- Speicher ----------
-static uint8_t packetBuf[4 + MAX_PAYLOAD];
+// Die grossen Puffer werden beim Start geholt (malloc): Als feste Variablen passen sie nicht in den
+// Speicherbereich, den der ESP32 dafür hat.
+static uint8_t *packetBuf = nullptr;  // 4 + MAX_PAYLOAD Bytes
 static size_t packetFill = 0;
 static uint32_t packetLastByte = 0;
 
-static uint8_t content[MAX_ANIM_BYTES];  // Animation ODER Textstreifen (nie beides gleichzeitig)
+static uint8_t *content = nullptr;  // MAX_ANIM_BYTES: Animation ODER Textstreifen (nie beides gleichzeitig)
 static uint32_t frameOff[MAX_ANIM_FRAMES], frameLen[MAX_ANIM_FRAMES];
 static int animCount = 0, animExpected = 0, animFps = 1, animIndex = 0;
 static uint32_t animUsed = 0, animNext = 0;
@@ -224,7 +226,7 @@ static void handlePacket(uint8_t type, const uint8_t *p, size_t len) {
       if (len < 7) return;
       const int h = p[4], w = p[5] | (p[6] << 8);
       const size_t bytes = (size_t)w * ((h + 7) / 8);
-      if (h < 1 || h > tft::H || w < 1 || len != 7 + bytes || bytes > sizeof content) return;
+      if (h < 1 || h > tft::H || w < 1 || len != 7 + bytes || bytes > MAX_ANIM_BYTES) return;
       wake();
       textColor = tft::rgb(p[0], p[1], p[2]);
       textSpeed = p[3] < 1 ? 1 : (p[3] > 10 ? 10 : p[3]);
@@ -319,7 +321,7 @@ static void IRAM_ATTR onShakeEdge() {
     shakeWindowStart = now;
     shakeEdges = 0;
   }
-  shakeEdges++;
+  shakeEdges = shakeEdges + 1;
 }
 
 static void pollInputs() {
@@ -352,10 +354,20 @@ void setup() {
     pinMode(PIN_SHAKE, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(PIN_SHAKE), onShakeEdge, CHANGE);
   }
+  packetBuf = (uint8_t *)malloc(4 + MAX_PAYLOAD);
+  content = (uint8_t *)malloc(MAX_ANIM_BYTES);
   tft::begin();
+  if (!packetBuf || !content) {
+    // Sollte nicht passieren. Falls doch: MAX_ANIM_BYTES / MAX_PAYLOAD verkleinern (auch in web/protocol.js).
+    Serial.println("Zu wenig Speicher fuer die Puffer");
+    tft::backlight(brightness);
+    tft::fillScreen(tft::rgb(255, 0, 0));
+    for (;;) delay(1000);
+  }
   render::splash();
   tft::backlight(brightness);
   bleBegin();
+  Serial.printf("Freier Speicher nach dem Start: %u Bytes\n", (unsigned)ESP.getFreeHeap());
   lastActivity = millis();
   Serial.println("Hairclip bereit");
 }

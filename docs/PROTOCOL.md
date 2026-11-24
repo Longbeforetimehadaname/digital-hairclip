@@ -10,7 +10,7 @@ Version 2 (23.11.2026): für das Display 1,9" mit **320 × 170 Pixeln im Querfor
 - Gerätename: beginnt mit `Hairclip` (die Webseite filtert danach).
 - Dienst: **Nordic UART Service** `6e400001-b5a3-f393-e0a9-e50e24dcca9e`
 - Schreib-Characteristic (Webseite → Clip): `6e400002-b5a3-f393-e0a9-e50e24dcca9e` (Write mit Antwort). Muss Schreibzugriffe bis **180 Bytes** annehmen (bei kleiner MTU als „Long Write“).
-- Der Clip sendet vorerst nichts zurück. Die TX-Characteristic (`...0003...`) ist für später reserviert, z. B. Akkustand.
+- Melde-Characteristic (Clip → Webseite): `6e400003-b5a3-f393-e0a9-e50e24dcca9e` (Notify). Gleiches Paketformat wie unten. Bisher meldet der Clip nur am Clip gezogene Tarot-Karten (Typ 0x06).
 
 ## Paketformat
 
@@ -39,6 +39,10 @@ Die Webseite schreibt in Stücken zu **180 Bytes**. Ein Paket kommt also in mehr
 | 0x03 | PHOTO | `y` (u16, erste Zeile), `rows` (u8), danach `rows × 320 × 2` Bytes RGB565 |
 | 0x04 | BRIGHTNESS | 1 Byte, 0–255 |
 | 0x05 | OFF | keine |
+| 0x06 | TAROT | `count` (u8, 1 oder 3), danach `count ×` [`id` (u8, 0–77), `reversed` (u8, 0/1)] |
+| 0x07 | CLOCK | `time` (u32, Ortszeit in Sekunden seit 1.1.1970), `style` (u8, 0 = nur Zeit, 1 = mit Datum), `r`, `g`, `b` |
+
+Unbekannte Typen ignoriert der Clip.
 
 ### FRAME (Animationen, Zeichnungen, Standbilder)
 
@@ -68,6 +72,21 @@ Globale Helligkeit, 0–255, am einfachsten über die Hintergrundbeleuchtung (Pi
 ### OFF
 
 Bildschirm schwarz und Hintergrundbeleuchtung aus, Animation und Text stoppen. Der nächste FRAME-, TEXT- oder PHOTO-Befehl schaltet wieder ein.
+
+### TAROT
+
+In beide Richtungen gleich:
+
+- **Webseite → Clip:** Der Clip zeigt genau diese Karten (erst die Misch-Animation, dann die Karten). Die Webseite zieht die Karten selbst, damit Vorschau und Clip gleich sind.
+- **Clip → Webseite (Notify):** Wurde am Clip gezogen (Knopf oder Schütteln), meldet der Clip die Karten. Die Webseite zeigt dann die Deutung.
+
+Karten-Nummern: 0–21 Grosse Arkana (Der Narr bis Die Welt), danach je 14 Karten Stäbe (22–35), Kelche (36–49), Schwerter (50–63), Münzen (64–77), jeweils Ass, Zwei … Zehn, Bube, Ritter, Königin, König. Die Liste steht in `web/tarot.js`, die Firmware bekommt sie über `tools/gen-firmware-data.mjs`.
+
+Ablauf am Clip: 8 Bilder Mischen à 150 ms, dann die Karte. Bei drei Karten wechseln Vergangenheit, Gegenwart, Zukunft alle 6 Sekunden. Gezeichnet wird mit `web/scene.js` (Vorschau) bzw. `firmware/hairclip/render.cpp` (Clip) nach denselben Regeln.
+
+### CLOCK
+
+Der Clip übernimmt die Zeit und zählt mit seiner eigenen Uhr weiter (ohne Internet, kann pro Tag einige Sekunden abweichen). Anzeige: Stunden und Minuten gross, Doppelpunkt blinkt im Sekundentakt, bei `style = 1` darunter das Datum.
 
 ## Darstellung
 

@@ -6,7 +6,9 @@ Ein selbstgebauter Haarclip mit kleinem Display, den man per Handy mit Nachricht
 - **Look:** Echte Pixel im Querformat 320 × 170: scharfer Text, Zeichnungen, Animationen und Fotos über das ganze Display.
 - **Steuerung:** Webseite mit Web Bluetooth (Chrome auf Android, App „Bluefy“ auf dem iPhone). Keine App-Installation.
 
-Stand: Webseite mit Vorschau ist fertig. Firmware und Gehäuse folgen, sobald die Teile da sind. Den ganzen Plan findest du in [PLAN.md](PLAN.md).
+- **Tarot:** Knopf am Clip kurz drücken = eine Karte, lange = drei Karten. Läuft auch ganz ohne Handy.
+
+Stand (24.11.2026): Webseite mit Vorschau ist fertig, Firmware ist geschrieben und übersetzt, aber noch nicht auf echter Hardware getestet. Das Gehäuse folgt, sobald die Teile da sind. Den ganzen Plan findest du in [PLAN.md](PLAN.md).
 
 ## Webseite lokal ausprobieren
 
