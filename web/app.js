@@ -636,6 +636,7 @@ renderPresets();
 syncDraw();
 updateStatus();
 renderHistory();
+state.text.value = textInput.value;
 refreshText();
 if (document.fonts && document.fonts.load) {
   document.fonts.load(FONT, 'Hallo ÄÖÜ').then(refreshText).catch(() => {});
